@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRACKING MM OPERATIONS</title>
+    <!-- Google Fonts: Outfit per un look geometrico e moderno -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Fogli di stile personalizzati -->
+    <link rel="stylesheet" href="/static/style.css?v=2.0">
+    <!-- Chart.js per i grafici interattivi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons per icone vettoriali moderne e pulite -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- HEADER DELLA DASHBOARD -->
+        <header class="app-header">
+            <div class="logo-area">
+                <img src="/static/logo-mm.png" alt="MM Operations" class="logo-image">
+                <div class="logo-divider"></div>
+                <div class="logo-text">
+                    <h1>TRACKING</h1>
+                    <p class="logo-subtitle">Spedizione in tempo reale</p>
+                </div>
+            </div>
+            
+            <div class="header-widgets">
+                <!-- Data e Ora Corrente -->
+                <div class="time-widget time-widget-large">
+                    <i data-lucide="clock"></i>
+                    <span id="current-time">Caricamento...</span>
+                </div>
+                
+                <!-- Badge di Stato Connessione AS400 -->
+                <div id="conn-badge" class="connection-status status-checking">
+                    <span class="status-dot"></span>
+                    <span class="status-label">Verifica...</span>
+                </div>
+                
+                <!-- Pulsante di aggiornamento manuale -->
+                <button id="btn-refresh" class="btn btn-primary" title="Forza Aggiornamento">
+                    <i data-lucide="refresh-cw" id="icon-refresh"></i>
+                    <span>Aggiorna</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- SEZIONE KPI PRINCIPALI -->
+        <section class="kpi-grid">
+            <!-- Card 1: Colli Chiusi Oggi -->
+            <div class="kpi-card" id="kpi-colli-chiusi">
+                <div class="kpi-icon icon-colli">
+                    <i data-lucide="package"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>Colli Chiusi (Oggi)</h3>
+                    <p class="kpi-value" id="val-colli-chiusi">0</p>
+                    <span class="kpi-trend trend-neutral" id="trend-colli-chiusi">
+                        <i data-lucide="info"></i> Totale allestito oggi
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Card 2: Colli Spediti Oggi -->
+            <div class="kpi-card" id="kpi-colli-spediti">
+                <div class="kpi-icon icon-clienti">
+                    <i data-lucide="truck"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>Colli Spediti (Oggi)</h3>
+                    <p class="kpi-value" id="val-colli-spediti">0</p>
+                    <span class="kpi-trend trend-neutral" id="trend-colli-spediti">
+                        <i data-lucide="info"></i> Totale spedito oggi
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card 3: Ordini Chiusi Oggi -->
+            <div class="kpi-card" id="kpi-ordini-chiusi">
+                <div class="kpi-icon icon-pezzi">
+                    <i data-lucide="clipboard-check"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>Ordini Chiusi (Oggi)</h3>
+                    <p class="kpi-value" id="val-ordini-chiusi">0</p>
+                    <span class="kpi-trend trend-neutral" id="trend-ordini-chiusi">
+                        <i data-lucide="info"></i> Ordini completati oggi
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card 4: Colli in Partenza (Last 5 Days backlog) -->
+            <div class="kpi-card" id="kpi-colli-partenza">
+                <div class="kpi-icon icon-righe">
+                    <i data-lucide="hourglass"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>In Partenza (5gg)</h3>
+                    <p class="kpi-value" id="val-colli-partenza">0</p>
+                    <span class="kpi-trend trend-neutral" id="trend-colli-partenza">
+                        <i data-lucide="alert-circle"></i> Colli pronti e non spediti
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEZIONE GRAFICI DI ANALISI -->
+        <section class="charts-section">
+            <!-- Grafico Principale (Bar: Closed vs Shipped per Client) -->
+            <div class="chart-card main-chart">
+                <div class="chart-header">
+                    <h2><i data-lucide="bar-chart-2"></i> Confronto Volumi per Cliente (Oggi)</h2>
+                    <span class="chart-subtitle">Colli Chiusi vs Colli Spediti</span>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Griglia Minore dei Grafici -->
+            <div class="charts-subgrid">
+                <!-- Grafico Backlog (Doughnut: In Partenza per Cliente) -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h2><i data-lucide="pie-chart"></i> Backlog in Partenza (Ultimi 5gg)</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Grafico Riepilogo Ordini (Horizontal Bar) -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h2><i data-lucide="activity"></i> Riepilogo Ordini di Oggi</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEZIONE FILTRI E TABELLA DATI -->
+        <section class="data-section">
+            <div class="section-header">
+                <h2><i data-lucide="table"></i> Monitoraggio Outbound per Cliente (Mandante)</h2>
+                <div class="header-actions">
+                    <button id="btn-export" class="btn btn-secondary btn-sm">
+                        <i data-lucide="download"></i> Esporta in CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pannello Filtri Semplificato -->
+            <div class="filter-panel">
+                <div class="filter-group search-group">
+                    <label for="filter-search"><i data-lucide="search"></i> Cerca Cliente o Codice Mandante</label>
+                    <input type="text" id="filter-search" placeholder="Es: Esselunga, Amazon, D14...">
+                </div>
+
+                <div class="filter-group" style="flex: 0 1 auto; min-width: 150px;">
+                    <label for="filter-backlog"><i data-lucide="filter"></i> Stato Backlog</label>
+                    <select id="filter-backlog">
+                        <option value="">Tutti i Clienti</option>
+                        <option value="has_backlog">Solo con Backlog in Partenza</option>
+                        <option value="no_backlog">Senza Backlog</option>
+                    </select>
+                </div>
+
+                <button id="btn-clear-filters" class="btn btn-icon-only" title="Pulisci Filtri">
+                    <i data-lucide="filter-x"></i>
+                </button>
+            </div>
+
+            <!-- Contenitore Tabella (Scrollabile) -->
+            <div class="table-container">
+                <table class="data-table" id="orders-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="tkinde">Cod. Mandante <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable" data-column="mddesc">Ragione Sociale / Cliente <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable text-center" data-column="colli_chiusi" style="background: rgba(59, 130, 246, 0.05);">Colli Chiusi <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable text-center" data-column="nr_order_chiusi" style="background: rgba(59, 130, 246, 0.05);">Ordini Chiusi <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable text-center" data-column="colli_spedito" style="background: rgba(16, 185, 129, 0.05);">Colli Spediti <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable text-center" data-column="nr_order_spedito" style="background: rgba(16, 185, 129, 0.05);">Ordini Spediti <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable text-center" data-column="colli_partenza" style="background: rgba(236, 72, 153, 0.05);">Colli in Partenza (5gg) <i data-lucide="chevrons-up-down"></i></th>
+                            <th class="sortable text-center" data-column="nr_order_partenza" style="background: rgba(236, 72, 153, 0.05);">Ordini in Partenza (5gg) <i data-lucide="chevrons-up-down"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Righe popolate da JavaScript -->
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="spinner-loader"></div>
+                                <p>Caricamento dati in corso...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Controlli di Impaginazione -->
+            <div class="table-footer">
+                <div class="table-info">
+                    Mostrati <span id="val-shown-start">0</span>-<span id="val-shown-end">0</span> di <span id="val-total-rows">0</span> record
+                </div>
+                <div class="pagination-controls">
+                    <button id="btn-prev-page" class="btn btn-secondary btn-sm" disabled>
+                        <i data-lucide="chevron-left"></i> Prec
+                    </button>
+                    <div id="page-numbers" class="page-numbers">
+                        <!-- Bottoni delle pagine generati da JS -->
+                    </div>
+                    <button id="btn-next-page" class="btn btn-secondary btn-sm" disabled>
+                        Succ <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- FOOTER DI SISTEMA -->
+        <footer class="app-footer-bar">
+            <p>&copy; 2026 Team IT MM Operations Dashboard Tracking</p>
+            <div class="footer-meta">
+                <span>Mandante: <strong>D14</strong></span>
+                <span>Magazzino: <strong>PV</strong></span>
+                <span id="update-indicator" class="pulse-indicator">Auto-aggiornamento attivo (10s)</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- CONTENITORE NOTIFICHE FLOAT (TOAST) -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Collegamento dello script principale JS -->
+    <script src="/static/app.js?v=2.0"></script>
+</body>
+</html>
