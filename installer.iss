@@ -18,9 +18,9 @@ OutputBaseFilename=TRACKING_MM_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=
+SetupIconFile=mm_icon.ico
 UninstallDisplayName={#MyAppName}
-UninstallDisplayIcon={app}\static\logo-mm.png
+UninstallDisplayIcon={app}\mm_icon.ico
 
 [Languages]
 Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
@@ -36,13 +36,14 @@ Source: "AVVIA_SERVER.bat";  DestDir: "{app}"; Flags: ignoreversion
 Source: "static\*";          DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "AVVIA_NASCOSTO.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "FERMA_SERVER.vbs";  DestDir: "{app}"; Flags: ignoreversion
+Source: "mm_icon.ico";       DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\▶ Avvia TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""
-Name: "{group}\■ Ferma TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""
+Name: "{group}\▶ Avvia TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"
+Name: "{group}\■ Ferma TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"
 Name: "{group}\Disinstalla";          Filename: "{uninstallexe}"
-Name: "{commondesktop}\▶ TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; Tasks: desktopicon
-Name: "{commondesktop}\■ Ferma TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; Tasks: desktopicon
+Name: "{commondesktop}\▶ TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"; Tasks: desktopicon
+Name: "{commondesktop}\■ Ferma TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{cmd}"; Parameters: "/C pip install -r ""{app}\requirements.txt"""; \
