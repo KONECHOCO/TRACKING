@@ -35,11 +35,14 @@ Source: "requirements.txt";  DestDir: "{app}"; Flags: ignoreversion
 Source: "AVVIA_SERVER.bat";  DestDir: "{app}"; Flags: ignoreversion
 Source: "static\*";          DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "AVVIA_NASCOSTO.vbs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "FERMA_SERVER.vbs";  DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Avvia TRACKING MM";    Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""
+Name: "{group}\▶ Avvia TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""
+Name: "{group}\■ Ferma TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""
 Name: "{group}\Disinstalla";          Filename: "{uninstallexe}"
-Name: "{commondesktop}\TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; Tasks: desktopicon
+Name: "{commondesktop}\▶ TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; Tasks: desktopicon
+Name: "{commondesktop}\■ Ferma TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; Tasks: desktopicon
 
 [Run]
 Filename: "{cmd}"; Parameters: "/C pip install -r ""{app}\requirements.txt"""; \
