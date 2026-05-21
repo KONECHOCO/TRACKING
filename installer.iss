@@ -36,12 +36,17 @@ Source: "AVVIA_SERVER.bat";  DestDir: "{app}"; Flags: ignoreversion
 Source: "static\*";          DestDir: "{app}\static"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "AVVIA_NASCOSTO.vbs"; DestDir: "{app}"; Flags: ignoreversion
 Source: "FERMA_SERVER.vbs";  DestDir: "{app}"; Flags: ignoreversion
-Source: "mm_icon.ico";       DestDir: "{app}"; Flags: ignoreversion
+Source: "mm_icon.ico";           DestDir: "{app}"; Flags: ignoreversion
+Source: "nssm.exe";             DestDir: "{app}"; Flags: ignoreversion
+Source: "sites.json";           DestDir: "{app}"; Flags: ignoreversion
+Source: "INSTALLA_SERVIZIO.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "RIMUOVI_SERVIZIO.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\▶ Avvia TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"
-Name: "{group}\■ Ferma TRACKING MM";  Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"
-Name: "{group}\Disinstalla";          Filename: "{uninstallexe}"
+Name: "{group}\▶ Avvia TRACKING MM";       Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"
+Name: "{group}\■ Ferma TRACKING MM";       Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"
+Name: "{group}\⚙ Installa come Servizio"; Filename: "{app}\INSTALLA_SERVIZIO.bat"; IconFilename: "{app}\mm_icon.ico"
+Name: "{group}\Disinstalla";              Filename: "{uninstallexe}"
 Name: "{commondesktop}\▶ TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"; Tasks: desktopicon
 Name: "{commondesktop}\■ Ferma TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"; Tasks: desktopicon
 
