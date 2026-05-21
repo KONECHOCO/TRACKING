@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from trac2 import get_ricezioni
-import os
+import os, json, base64
 from collections import defaultdict
+from datetime import datetime
+from typing import Optional
 
 app = FastAPI(title="Dashboard MM Operations Tracking", version="1.0.0")
 
@@ -89,6 +91,67 @@ def get_dati_completi():
         return {"error": str(e)}
     except Exception as e:
         return {"error": str(e)}
+
+# --- COMUNICAZIONI ---
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+COMM_FILE  = os.path.join(BASE_DIR, "comunicazioni.json")
+
+def load_comms():
+    if os.path.exists(COMM_FILE):
+        with open(COMM_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_comms(data):
+    with open(COMM_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+@app.get("/api/comunicazioni")
+def get_comunicazioni():
+    comms = load_comms()
+    today = datetime.now().strftime("%Y-%m-%d")
+    active = [c for c in comms if not c.get("expiry") or c["expiry"] >= today]
+    if len(active) != len(comms):
+        save_comms(active)
+    return active
+
+@app.post("/api/comunicazioni")
+async def create_comunicazione(
+    title:    str = Form(...),
+    message:  str = Form(...),
+    name:     str = Form(...),
+    role:     str = Form(""),
+    priority: str = Form("info"),
+    expiry:   str = Form(""),
+    image:    Optional[UploadFile] = File(None)
+):
+    comms = load_comms()
+    image_data = None
+    if image and image.filename:
+        content = await image.read()
+        image_data = f"data:{image.content_type};base64,{base64.b64encode(content).decode()}"
+
+    new_comm = {
+        "id":         int(datetime.now().timestamp() * 1000),
+        "title":      title,
+        "message":    message,
+        "name":       name,
+        "role":       role,
+        "priority":   priority,
+        "expiry":     expiry if expiry else None,
+        "image":      image_data,
+        "created_at": datetime.now().strftime("%d/%m/%Y %H:%M")
+    }
+    comms.insert(0, new_comm)
+    save_comms(comms)
+    return new_comm
+
+@app.delete("/api/comunicazioni/{comm_id}")
+def delete_comunicazione(comm_id: int):
+    comms = load_comms()
+    comms = [c for c in comms if c["id"] != comm_id]
+    save_comms(comms)
+    return {"status": "deleted"}
 
 # --- Servizio Frontend Statico ---
 

@@ -36,8 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Associa Event Listeners
     setupEventListeners();
 
-    // Avvia auto-scroll ogni 2 minuti
+    // Avvia auto-scroll ogni 1 minuto
     startAutoScroll();
+
+    // Carica comunicazioni
+    fetchComunicazioni();
+    setInterval(fetchComunicazioni, 30000);
+
+    // Pulsante apertura pannello comunicazioni
+    document.getElementById('btn-open-comm').addEventListener('click', openCommPanel);
 });
 
 // --- GESTIONE EVENTI (LISTENERS) ---
@@ -720,6 +727,216 @@ function startAutoScroll() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 10000);
     }, 60000); // ogni 1 minuto
+}
+
+// ==========================================================================
+//  SISTEMA COMUNICAZIONI
+// ==========================================================================
+
+let selectedPriority = 'info';
+
+// Apri pannello
+function openCommPanel() {
+    document.getElementById('comm-panel').classList.add('open');
+    document.getElementById('comm-overlay').classList.add('active');
+    loadCommList();
+    lucide.createIcons();
+}
+
+// Chiudi pannello
+function closeCommPanel() {
+    document.getElementById('comm-panel').classList.remove('open');
+    document.getElementById('comm-overlay').classList.remove('active');
+}
+
+// Cambia tab
+function switchCommTab(tab) {
+    document.querySelectorAll('.comm-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.comm-tab-content').forEach(c => c.style.display = 'none');
+
+    if (tab === 'new') {
+        document.querySelectorAll('.comm-tab')[0].classList.add('active');
+        document.getElementById('comm-tab-new').style.display = 'flex';
+    } else {
+        document.querySelectorAll('.comm-tab')[1].classList.add('active');
+        document.getElementById('comm-tab-list').style.display = 'flex';
+        loadCommList();
+    }
+}
+
+// Seleziona priorità
+function selectPriority(btn) {
+    document.querySelectorAll('.pri-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedPriority = btn.getAttribute('data-priority');
+}
+
+// Anteprima immagine
+function previewImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('comm-image-preview').src = e.target.result;
+        document.getElementById('comm-image-preview-wrap').style.display = 'block';
+        document.getElementById('image-drop-zone').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Rimuovi immagine
+function removeImage() {
+    document.getElementById('comm-image').value = '';
+    document.getElementById('comm-image-preview-wrap').style.display = 'none';
+    document.getElementById('image-drop-zone').style.display = 'flex';
+}
+
+// Pubblica comunicazione
+async function publishComm() {
+    const title   = document.getElementById('comm-title').value.trim();
+    const message = document.getElementById('comm-message').value.trim();
+    const name    = document.getElementById('comm-name').value.trim();
+    const role    = document.getElementById('comm-role').value.trim();
+    const expiry  = document.getElementById('comm-expiry').value;
+    const imageFile = document.getElementById('comm-image').files[0];
+
+    if (!title || !message || !name) {
+        showToast('Campi mancanti', 'Compila Titolo, Messaggio e Nome prima di pubblicare.', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btn-publish-comm');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader"></i> Pubblicazione...';
+    lucide.createIcons();
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('message', message);
+    formData.append('name', name);
+    formData.append('role', role);
+    formData.append('priority', selectedPriority);
+    formData.append('expiry', expiry);
+    if (imageFile) formData.append('image', imageFile);
+
+    try {
+        const res = await fetch('/api/comunicazioni', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Errore server');
+
+        // Reset form
+        document.getElementById('comm-title').value = '';
+        document.getElementById('comm-message').value = '';
+        document.getElementById('comm-expiry').value = '';
+        removeImage();
+
+        showToast('Comunicazione Pubblicata!', `"${title}" è ora visibile a tutti.`, 'success');
+        fetchComunicazioni();
+        switchCommTab('list');
+
+    } catch (e) {
+        showToast('Errore', 'Impossibile pubblicare la comunicazione.', 'warning');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="send"></i> Pubblica Comunicazione';
+        lucide.createIcons();
+    }
+}
+
+// Elimina comunicazione
+async function deleteComm(id) {
+    await fetch(`/api/comunicazioni/${id}`, { method: 'DELETE' });
+    fetchComunicazioni();
+    loadCommList();
+    showToast('Eliminata', 'Comunicazione rimossa.', 'info');
+}
+
+// Carica lista nel pannello
+async function loadCommList() {
+    const container = document.getElementById('comm-list-container');
+    try {
+        const res  = await fetch('/api/comunicazioni');
+        const list = await res.json();
+
+        if (list.length === 0) {
+            container.innerHTML = '<p class="comm-empty">Nessuna comunicazione attiva.</p>';
+            return;
+        }
+
+        container.innerHTML = list.map(c => `
+            <div class="comm-list-item pri-${c.priority}" style="margin-bottom:0.75rem">
+                <div class="comm-list-item-header">
+                    <span class="comm-list-title">${c.title}</span>
+                    <button class="comm-list-delete" onclick="deleteComm(${c.id})" title="Elimina">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+                <p class="comm-list-msg">${c.message}</p>
+                <div class="comm-list-footer">
+                    <span class="comm-list-sig"><i data-lucide="user" style="width:11px;height:11px"></i> ${c.name}${c.role ? ' — ' + c.role : ''}</span>
+                    <span>${c.created_at}</span>
+                </div>
+            </div>
+        `).join('');
+
+        const badge = document.getElementById('comm-tab-count');
+        if (badge) badge.textContent = list.length;
+
+        lucide.createIcons();
+    } catch (e) {
+        container.innerHTML = '<p class="comm-empty">Errore caricamento comunicazioni.</p>';
+    }
+}
+
+// Recupera e mostra banner nella dashboard
+async function fetchComunicazioni() {
+    try {
+        const res  = await fetch('/api/comunicazioni');
+        const list = await res.json();
+
+        const banner = document.getElementById('comm-banner');
+        const badge  = document.getElementById('comm-count-badge');
+
+        if (list.length === 0) {
+            banner.style.display = 'none';
+            badge.style.display  = 'none';
+            return;
+        }
+
+        badge.textContent = list.length;
+        badge.style.display = 'flex';
+        banner.style.display = 'flex';
+
+        const iconMap = { info: 'info', warning: 'alert-triangle', urgent: 'alert-octagon' };
+
+        banner.innerHTML = list.map(c => {
+            const initials = c.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+            const imageHtml = c.image
+                ? `<img src="${c.image}" class="comm-card-side-image" alt="Immagine comunicazione">`
+                : '';
+            return `
+                <div class="comm-card pri-${c.priority}">
+                    <div class="comm-card-icon"><i data-lucide="${iconMap[c.priority] || 'info'}"></i></div>
+                    <div class="comm-card-body">
+                        <div class="comm-card-title">${c.title}</div>
+                        <div class="comm-card-msg">${c.message}</div>
+                        <div class="comm-card-signature">
+                            <div class="comm-sig-avatar">${initials}</div>
+                            <div class="comm-sig-info">
+                                <span class="comm-sig-name">${c.name}</span>
+                                ${c.role ? `<span class="comm-sig-role">${c.role}</span>` : ''}
+                            </div>
+                            <span class="comm-sig-date"><i data-lucide="clock" style="width:11px;height:11px;display:inline;vertical-align:middle"></i> ${c.created_at}</span>
+                        </div>
+                    </div>
+                    ${imageHtml}
+                </div>
+            `;
+        }).join('');
+
+        lucide.createIcons();
+    } catch (e) {
+        console.warn('Comunicazioni non disponibili:', e);
+    }
 }
 
 // --- OROLOGIO ---

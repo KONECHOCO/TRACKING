@@ -42,6 +42,13 @@
                     <span class="status-label">Verifica...</span>
                 </div>
                 
+                <!-- Pulsante Comunicazioni -->
+                <button id="btn-open-comm" class="btn btn-comm" title="Comunicazioni">
+                    <i data-lucide="megaphone"></i>
+                    <span>Comunicazioni</span>
+                    <span id="comm-count-badge" class="comm-count-badge" style="display:none">0</span>
+                </button>
+
                 <!-- Pulsante di aggiornamento manuale -->
                 <button id="btn-refresh" class="btn btn-primary" title="Forza Aggiornamento">
                     <i data-lucide="refresh-cw" id="icon-refresh"></i>
@@ -49,6 +56,9 @@
                 </button>
             </div>
         </header>
+
+        <!-- BANNER COMUNICAZIONI ATTIVE -->
+        <section id="comm-banner" class="comm-banner" style="display:none"></section>
 
         <!-- SEZIONE KPI PRINCIPALI -->
         <section class="kpi-grid">
@@ -234,6 +244,108 @@
             </div>
         </footer>
     </div>
+
+    <!-- OVERLAY SCURO -->
+    <div id="comm-overlay" class="comm-overlay" onclick="closeCommPanel()"></div>
+
+    <!-- PANNELLO COMUNICAZIONI (SLIDE-IN DA DESTRA) -->
+    <aside id="comm-panel" class="comm-panel">
+        <div class="comm-panel-header">
+            <div class="comm-panel-title">
+                <i data-lucide="megaphone"></i>
+                <h2>Comunicazioni</h2>
+            </div>
+            <button class="btn-icon-only" onclick="closeCommPanel()"><i data-lucide="x"></i></button>
+        </div>
+
+        <!-- TABS -->
+        <div class="comm-tabs">
+            <button class="comm-tab active" onclick="switchCommTab('new')">
+                <i data-lucide="plus-circle"></i> Nuova
+            </button>
+            <button class="comm-tab" onclick="switchCommTab('list')">
+                <i data-lucide="list"></i> Attive <span id="comm-tab-count"></span>
+            </button>
+        </div>
+
+        <!-- TAB: NUOVA COMUNICAZIONE -->
+        <div id="comm-tab-new" class="comm-tab-content">
+            <!-- Priorità -->
+            <div class="comm-field">
+                <label>Livello Priorità</label>
+                <div class="priority-selector">
+                    <button class="pri-btn pri-info active" data-priority="info" onclick="selectPriority(this)">
+                        <i data-lucide="info"></i> Informazione
+                    </button>
+                    <button class="pri-btn pri-warning" data-priority="warning" onclick="selectPriority(this)">
+                        <i data-lucide="alert-triangle"></i> Avviso
+                    </button>
+                    <button class="pri-btn pri-urgent" data-priority="urgent" onclick="selectPriority(this)">
+                        <i data-lucide="alert-octagon"></i> Urgente
+                    </button>
+                </div>
+            </div>
+
+            <!-- Titolo -->
+            <div class="comm-field">
+                <label><i data-lucide="type"></i> Titolo</label>
+                <input type="text" id="comm-title" placeholder="Es: Riunione operativa ore 15:00">
+            </div>
+
+            <!-- Messaggio -->
+            <div class="comm-field">
+                <label><i data-lucide="align-left"></i> Messaggio</label>
+                <textarea id="comm-message" rows="5" placeholder="Scrivi il tuo messaggio..."></textarea>
+            </div>
+
+            <!-- Upload Immagine -->
+            <div class="comm-field">
+                <label><i data-lucide="image"></i> Immagine / Foto (opzionale)</label>
+                <div class="image-drop-zone" id="image-drop-zone" onclick="document.getElementById('comm-image').click()">
+                    <i data-lucide="upload-cloud"></i>
+                    <p>Clicca o trascina un'immagine</p>
+                    <span>JPG, PNG, GIF — max 5MB</span>
+                </div>
+                <input type="file" id="comm-image" accept="image/*" style="display:none" onchange="previewImage(this)">
+                <div id="comm-image-preview-wrap" style="display:none; margin-top:0.75rem; position:relative;">
+                    <img id="comm-image-preview" style="width:100%;border-radius:8px;max-height:180px;object-fit:cover;">
+                    <button class="remove-image-btn" onclick="removeImage()" title="Rimuovi immagine">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Firma -->
+            <div class="comm-field-row">
+                <div class="comm-field">
+                    <label><i data-lucide="user"></i> Nome Completo</label>
+                    <input type="text" id="comm-name" placeholder="Es: Mario Rossi">
+                </div>
+                <div class="comm-field">
+                    <label><i data-lucide="briefcase"></i> Ruolo / Reparto</label>
+                    <input type="text" id="comm-role" placeholder="Es: Resp. Logistica">
+                </div>
+            </div>
+
+            <!-- Scadenza -->
+            <div class="comm-field">
+                <label><i data-lucide="calendar"></i> Scade il (opzionale — lascia vuoto per sempre)</label>
+                <input type="date" id="comm-expiry">
+            </div>
+
+            <!-- Pubblica -->
+            <button id="btn-publish-comm" class="btn btn-primary btn-full" onclick="publishComm()">
+                <i data-lucide="send"></i> Pubblica Comunicazione
+            </button>
+        </div>
+
+        <!-- TAB: LISTA COMUNICAZIONI ATTIVE -->
+        <div id="comm-tab-list" class="comm-tab-content" style="display:none">
+            <div id="comm-list-container">
+                <p class="comm-empty">Nessuna comunicazione attiva.</p>
+            </div>
+        </div>
+    </aside>
 
     <!-- CONTENITORE NOTIFICHE FLOAT (TOAST) -->
     <div id="toast-container" class="toast-container"></div>
