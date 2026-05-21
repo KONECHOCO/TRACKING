@@ -92,8 +92,42 @@ def get_dati_completi():
     except Exception as e:
         return {"error": str(e)}
 
-# --- COMUNICAZIONI ---
+# --- GESTIONE SITI ---
+SITES_FILE = os.path.join(BASE_DIR if 'BASE_DIR' in dir() else os.path.dirname(os.path.abspath(__file__)), "sites.json")
+
+def load_sites():
+    with open(os.path.join(BASE_DIR, "sites.json"), "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_sites(data):
+    with open(os.path.join(BASE_DIR, "sites.json"), "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+@app.get("/api/sites")
+def get_sites():
+    cfg = load_sites()
+    active = cfg.get("active", "liscate")
+    sites  = cfg.get("sites", {})
+    return {
+        "active": active,
+        "active_name": sites.get(active, {}).get("name", active.upper()),
+        "active_color": sites.get(active, {}).get("color", "#3b82f6"),
+        "sites": [{"key": k, "name": v["name"], "color": v["color"]} for k, v in sites.items()]
+    }
+
+@app.post("/api/sites/switch/{site_key}")
+def switch_site(site_key: str):
+    cfg = load_sites()
+    if site_key not in cfg["sites"]:
+        return {"error": f"Sito '{site_key}' non trovato"}
+    cfg["active"] = site_key
+    save_sites(cfg)
+    return {"status": "ok", "active": site_key, "name": cfg["sites"][site_key]["name"]}
+
+# --- BASE DIR ---
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+
+# --- COMUNICAZIONI ---
 COMM_FILE  = os.path.join(BASE_DIR, "comunicazioni.json")
 
 def load_comms():

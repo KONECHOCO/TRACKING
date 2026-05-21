@@ -1,36 +1,54 @@
 import pyodbc
 import random
 import datetime
+import json
+import os
 
 # Cache globale per mantenere coerenti i dati simulati
 _simulated_data = None
 _last_simulation_update = datetime.datetime.now()
 
+# --- Lettura configurazione siti ---
+SITES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sites.json")
+
+def get_active_site():
+    try:
+        with open(SITES_FILE, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        active_key = cfg.get("active", "liscate")
+        site = cfg["sites"].get(active_key, list(cfg["sites"].values())[0])
+        return site
+    except Exception:
+        return {"name": "LISCATE", "as400_host": "192.168.150.12", "uid": "KONEIN1", "pwd": "KONEI"}
+
 # 🔌 Tentativo di connessione al DB2 su AS/400 con fallback su più driver
 def get_connection():
+    site = get_active_site()
+    host = site["as400_host"]
+    uid  = site["uid"]
+    pwd  = site["pwd"]
+
     drivers = [
         "iSeries Access ODBC Driver",
         "IBM i Access ODBC Driver",
         "IBM DB2 ODBC DRIVER - IBMDBCL1",
         "Client Access ODBC Driver (32-bit)"
     ]
-    
+
     last_err = None
     for drv in drivers:
         try:
-            conn_str = f"DRIVER={{{drv}}};SYSTEM=192.168.150.12;UID=KONEIN1;PWD=KONEI;"
-            
+            conn_str = f"DRIVER={{{drv}}};SYSTEM={host};UID={uid};PWD={pwd};"
             if "IBM DB2" in drv:
-                conn_str = f"DRIVER={{{drv}}};DATABASE=IL_TUO_DB;HOSTNAME=192.168.150.12;PORT=50000;PROTOCOL=TCPIP;UID=KONEIN1;PWD=KONEI;"
-            
+                conn_str = f"DRIVER={{{drv}}};DATABASE=IL_TUO_DB;HOSTNAME={host};PORT=50000;PROTOCOL=TCPIP;UID={uid};PWD={pwd};"
             cnx = pyodbc.connect(conn_str, timeout=3)
-            print(f"[INFO] Connessione DB2 riuscita con il driver: {drv}")
+            print(f"[INFO] Connessione DB2 riuscita — Sito: {site['name']} ({host}) — Driver: {drv}")
             return cnx
         except Exception as e:
             last_err = e
             print(f"[WARN] Tentativo fallito con il driver {drv}: {str(e)[:100]}...")
             continue
-            
+
     raise last_err if last_err else Exception("Impossibile connettersi ad AS/400 con i driver disponibili.")
 
 

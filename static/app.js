@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Pulsante apertura pannello comunicazioni
     document.getElementById('btn-open-comm').addEventListener('click', openCommPanel);
+
+    // Carica info sito attivo
+    loadSiteInfo();
 });
 
 // --- GESTIONE EVENTI (LISTENERS) ---
@@ -713,6 +716,69 @@ function showToast(title, message, type = 'info') {
         }, 400);
     }, 4500);
 }
+
+// ==========================================================================
+//  GESTIONE SITI
+// ==========================================================================
+async function loadSiteInfo() {
+    try {
+        const res  = await fetch('/api/sites');
+        const data = await res.json();
+
+        // Aggiorna badge
+        const badge = document.getElementById('site-badge');
+        const dot   = document.getElementById('site-dot');
+        const name  = document.getElementById('site-name');
+
+        name.textContent       = data.active_name;
+        dot.style.background   = data.active_color;
+        dot.style.boxShadow    = `0 0 8px ${data.active_color}`;
+        badge.style.borderColor = data.active_color + '66';
+        badge.style.background  = data.active_color + '1a';
+
+        // Popola dropdown
+        const dropdown = document.getElementById('site-dropdown');
+        dropdown.innerHTML = data.sites.map(s => `
+            <div class="site-dropdown-item ${s.key === data.active ? 'active' : ''}"
+                 onclick="switchSite('${s.key}')">
+                <span class="site-dropdown-dot" style="background:${s.color};box-shadow:0 0 6px ${s.color}"></span>
+                <span>${s.name}</span>
+                ${s.key === data.active ? '<i data-lucide="check" class="site-dropdown-check"></i>' : ''}
+            </div>
+        `).join('');
+        lucide.createIcons();
+    } catch(e) { console.warn('Siti non disponibili', e); }
+}
+
+function toggleSiteMenu() {
+    const dropdown = document.getElementById('site-dropdown');
+    const badge    = document.getElementById('site-badge');
+    const open     = dropdown.style.display === 'block';
+    dropdown.style.display = open ? 'none' : 'block';
+    badge.classList.toggle('open', !open);
+}
+
+async function switchSite(key) {
+    document.getElementById('site-dropdown').style.display = 'none';
+    document.getElementById('site-badge').classList.remove('open');
+    try {
+        await fetch(`/api/sites/switch/${key}`, { method: 'POST' });
+        await loadSiteInfo();
+        fetchDashboardData(true);
+        showToast('Sito Cambiato', `Connesso a: ${key.toUpperCase()}`, 'success');
+    } catch(e) {
+        showToast('Errore', 'Impossibile cambiare sito.', 'warning');
+    }
+}
+
+// Chiudi dropdown cliccando fuori
+document.addEventListener('click', e => {
+    const sw = document.getElementById('site-switcher');
+    if (sw && !sw.contains(e.target)) {
+        document.getElementById('site-dropdown').style.display = 'none';
+        document.getElementById('site-badge').classList.remove('open');
+    }
+});
 
 // --- HELPER SLEEP ---
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

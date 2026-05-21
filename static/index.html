@@ -27,6 +27,18 @@
                     <h1>TRACKING</h1>
                     <p class="logo-subtitle">Spedizione in tempo reale</p>
                 </div>
+                <div class="logo-divider"></div>
+                <!-- Badge Sito Attivo + Switcher -->
+                <div class="site-switcher" id="site-switcher">
+                    <div class="site-badge" id="site-badge" onclick="toggleSiteMenu()">
+                        <span class="site-dot" id="site-dot"></span>
+                        <span class="site-name" id="site-name">LISCATE</span>
+                        <i data-lucide="chevron-down" class="site-chevron"></i>
+                    </div>
+                    <div class="site-dropdown" id="site-dropdown" style="display:none">
+                        <!-- popolato da JS -->
+                    </div>
+                </div>
             </div>
             
             <div class="header-widgets">
@@ -353,11 +365,11 @@
             <div class="comm-field-row">
                 <div class="comm-field">
                     <label><i data-lucide="user"></i> Nome Completo</label>
-                    <input type="text" id="comm-name" placeholder="Es: Mario Rossi">
+                    <input type="text" id="comm-name" placeholder="Es: Francesco Bruno">
                 </div>
                 <div class="comm-field">
                     <label><i data-lucide="briefcase"></i> Ruolo / Reparto</label>
-                    <input type="text" id="comm-role" placeholder="Es: Resp. Logistica">
+                    <input type="text" id="comm-role" placeholder="Es: IT Manager">
                 </div>
             </div>
 

@@ -1,0 +1,19 @@
+{
+  "active": "liscate",
+  "sites": {
+    "liscate": {
+      "name": "LISCATE",
+      "color": "#3b82f6",
+      "as400_host": "192.168.150.12",
+      "uid": "KONEIN1",
+      "pwd": "KONEI"
+    },
+    "calvenzano": {
+      "name": "CALVENZANO",
+      "color": "#10b981",
+      "as400_host": "192.168.200.12",
+      "uid": "KONEIN1",
+      "pwd": "KONEI"
+    }
+  }
+}
