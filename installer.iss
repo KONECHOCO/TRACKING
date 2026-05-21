@@ -41,11 +41,17 @@ Source: "nssm.exe";             DestDir: "{app}"; Flags: ignoreversion
 Source: "sites.json";           DestDir: "{app}"; Flags: ignoreversion
 Source: "INSTALLA_SERVIZIO.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "RIMUOVI_SERVIZIO.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "kiosk\kiosk.cfg";               DestDir: "{app}\kiosk"; Flags: ignoreversion
+Source: "kiosk\KIOSK_AVVIA.bat";         DestDir: "{app}\kiosk"; Flags: ignoreversion
+Source: "kiosk\KIOSK_AVVIA_NASCOSTO.vbs"; DestDir: "{app}\kiosk"; Flags: ignoreversion
+Source: "kiosk\KIOSK_INSTALLA.bat";      DestDir: "{app}\kiosk"; Flags: ignoreversion
+Source: "kiosk\KIOSK_RIMUOVI.bat";       DestDir: "{app}\kiosk"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\▶ Avvia TRACKING MM";       Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"
 Name: "{group}\■ Ferma TRACKING MM";       Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"
 Name: "{group}\⚙ Installa come Servizio"; Filename: "{app}\INSTALLA_SERVIZIO.bat"; IconFilename: "{app}\mm_icon.ico"
+Name: "{group}\📺 Installa Kiosk Monitor"; Filename: "{app}\kiosk\KIOSK_INSTALLA.bat"; IconFilename: "{app}\mm_icon.ico"
 Name: "{group}\Disinstalla";              Filename: "{uninstallexe}"
 Name: "{commondesktop}\▶ TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AVVIA_NASCOSTO.vbs"""; IconFilename: "{app}\mm_icon.ico"; Tasks: desktopicon
 Name: "{commondesktop}\■ Ferma TRACKING MM"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\FERMA_SERVER.vbs"""; IconFilename: "{app}\mm_icon.ico"; Tasks: desktopicon
