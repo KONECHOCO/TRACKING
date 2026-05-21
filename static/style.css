@@ -1383,6 +1383,62 @@ body {
 .comm-list-sig { display: flex; align-items: center; gap: 0.3rem; }
 .comm-empty { text-align: center; color: var(--text-dimmed); font-size: 0.85rem; padding: 2rem 0; }
 
+/* --- TRANSIZIONE CAMBIO SITO --- */
+.site-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    background: radial-gradient(ellipse at center, hsl(222, 47%, 8%) 0%, hsl(222, 47%, 3%) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: commFsIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.st-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+}
+.st-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-dimmed);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.35rem 1.25rem;
+}
+.st-dot-large {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin: 0.5rem 0;
+    animation: pulse 1s infinite;
+}
+.st-name {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.st-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-dimmed);
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* --- SCHERMATA FULL-SCREEN COMUNICAZIONE --- */
 .comm-fullscreen {
     position: fixed;

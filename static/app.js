@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Carica info sito attivo
     loadSiteInfo();
+
+    // Avvia presentazione automatica dopo 8s (dati già caricati)
+    setTimeout(startPresentationMode, 8000);
 });
 
 // --- GESTIONE EVENTI (LISTENERS) ---
@@ -783,19 +786,22 @@ document.addEventListener('click', e => {
 // --- HELPER SLEEP ---
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-// --- AUTO-SCROLL + CICLO PAGINE TABELLA ---
+// ==========================================================================
+//  MODALITÀ PRESENTAZIONE AUTOMATICA
+// ==========================================================================
+let presentationActive = false;
+
+// Cicla le pagine della tabella (5s per pagina) poi torna su
 async function runScrollCycle() {
     const tableSection = document.querySelector('.data-section');
-    if (!tableSection) return;
+    if (!tableSection || filteredData.length === 0) return;
 
-    const targetY      = tableSection.getBoundingClientRect().top + window.scrollY - 16;
-    const timePerPage  = 5000; // 5 secondi per pagina
-    const totalPages   = Math.ceil(filteredData.length / itemsPerPage);
+    const targetY     = tableSection.getBoundingClientRect().top + window.scrollY - 16;
+    const timePerPage = 5000;
+    const totalPages  = Math.ceil(filteredData.length / itemsPerPage);
 
-    // Porta la tabella in cima allo schermo
     window.scrollTo({ top: targetY, behavior: 'smooth' });
 
-    // Cicla su ogni pagina
     for (let p = 1; p <= totalPages; p++) {
         if (p > 1) {
             currentPage = p;
@@ -805,14 +811,91 @@ async function runScrollCycle() {
         await sleep(timePerPage);
     }
 
-    // Torna alla pagina 1 e scrolla in cima
     currentPage = 1;
     renderTable();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Mostra schermata animata di cambio sito
+async function showSiteTransition(siteInfo) {
+    const overlay = document.getElementById('site-transition');
+    const nameEl  = document.getElementById('st-name');
+    const dotEl   = document.getElementById('st-dot');
+
+    nameEl.textContent      = siteInfo.name;
+    dotEl.style.background  = siteInfo.color;
+    dotEl.style.boxShadow   = `0 0 24px ${siteInfo.color}`;
+
+    overlay.style.display   = 'flex';
+    overlay.style.animation = 'commFsIn 0.4s cubic-bezier(0.16,1,0.3,1)';
+    playSound('comm');
+
+    await sleep(2800);
+}
+
+function hideSiteTransition() {
+    const overlay = document.getElementById('site-transition');
+    overlay.style.animation = 'commFsOut 0.35s ease forwards';
+    setTimeout(() => {
+        overlay.style.display   = 'none';
+        overlay.style.animation = '';
+    }, 350);
+}
+
+// Loop presentazione: Liscate → Calvenzano → Liscate → …
+async function startPresentationMode() {
+    if (presentationActive) return;
+    presentationActive = true;
+
+    try {
+        const res  = await fetch('/api/sites');
+        const data = await res.json();
+        const sitesList = data.sites; // [{key, name, color}, ...]
+
+        if (sitesList.length < 2) {
+            // Un solo sito: cicla solo le pagine ogni 60s
+            setInterval(runScrollCycle, 60000);
+            return;
+        }
+
+        // Trova l'indice corrente
+        let idx = sitesList.findIndex(s => s.key === data.active);
+
+        while (presentationActive) {
+            // 1. Pausa iniziale prima di scorrere
+            await sleep(5000);
+
+            // 2. Cicla pagine del sito corrente
+            await runScrollCycle();
+
+            // 3. Pausa breve in cima prima del cambio
+            await sleep(2000);
+
+            // 4. Passa al sito successivo
+            idx = (idx + 1) % sitesList.length;
+            const nextSite = sitesList[idx];
+
+            // 5. Mostra schermata di transizione
+            await showSiteTransition(nextSite);
+
+            // 6. Cambia sito e ricarica dati
+            await fetch(`/api/sites/switch/${nextSite.key}`, { method: 'POST' });
+            await loadSiteInfo();
+            await fetchDashboardData();
+
+            // 7. Nascondi transizione e torna in cima
+            hideSiteTransition();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    } catch(e) {
+        console.error('Errore presentazione:', e);
+        presentationActive = false;
+    }
+}
+
+// Compatibilità vecchio nome (non più usato come interval)
 function startAutoScroll() {
-    setInterval(runScrollCycle, 60000); // ogni 1 minuto
+    // Presentazione gestita da startPresentationMode()
 }
 
 // ==========================================================================
