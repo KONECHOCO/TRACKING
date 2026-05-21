@@ -57,9 +57,6 @@
             </div>
         </header>
 
-        <!-- BANNER COMUNICAZIONI ATTIVE -->
-        <section id="comm-banner" class="comm-banner" style="display:none"></section>
-
         <!-- SEZIONE KPI PRINCIPALI -->
         <section class="kpi-grid">
             <!-- Card 1: Colli Chiusi Oggi -->
@@ -243,6 +240,43 @@
                 <span id="update-indicator" class="pulse-indicator">Auto-aggiornamento attivo (10s)</span>
             </div>
         </footer>
+    </div>
+
+    <!-- SCHERMATA COMUNICAZIONE FULL-SCREEN -->
+    <div id="comm-fullscreen" class="comm-fullscreen" style="display:none" onclick="closeFullscreenComm()">
+        <div class="comm-fs-header">
+            <img src="/static/logo-mm.png" alt="MM Operations" style="height:36px;opacity:0.85">
+            <span class="comm-fs-label" id="comm-fs-label">📢 COMUNICAZIONE</span>
+        </div>
+
+        <div class="comm-fs-body" onclick="event.stopPropagation()">
+            <div class="comm-fs-priority-bar" id="comm-fs-priority-bar"></div>
+            <div class="comm-fs-content">
+                <div class="comm-fs-icon" id="comm-fs-icon">
+                    <i data-lucide="info"></i>
+                </div>
+                <div class="comm-fs-text">
+                    <h1 id="comm-fs-title"></h1>
+                    <p id="comm-fs-message"></p>
+                </div>
+                <img id="comm-fs-image" class="comm-fs-image" style="display:none" alt="">
+            </div>
+            <div class="comm-fs-signature">
+                <div class="comm-fs-avatar" id="comm-fs-avatar"></div>
+                <div class="comm-fs-sig-info">
+                    <span id="comm-fs-name"></span>
+                    <small id="comm-fs-role"></small>
+                </div>
+                <span class="comm-fs-date" id="comm-fs-date"></span>
+            </div>
+        </div>
+
+        <div class="comm-fs-footer">
+            <div class="comm-fs-progress-wrap">
+                <div class="comm-fs-progress-bar" id="comm-fs-progress"></div>
+            </div>
+            <p class="comm-fs-hint">Ritorno alla dashboard tra <strong id="comm-fs-countdown">30</strong>s &nbsp;·&nbsp; Clicca ovunque per chiudere</p>
+        </div>
     </div>
 
     <!-- OVERLAY SCURO -->

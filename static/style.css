@@ -1300,11 +1300,178 @@ body {
 .comm-list-sig { display: flex; align-items: center; gap: 0.3rem; }
 .comm-empty { text-align: center; color: var(--text-dimmed); font-size: 0.85rem; padding: 2rem 0; }
 
-/* --- BANNER COMUNICAZIONI ATTIVE (nella dashboard) --- */
-.comm-banner {
+/* --- SCHERMATA FULL-SCREEN COMUNICAZIONE --- */
+.comm-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: radial-gradient(ellipse at center, hsl(222, 47%, 10%) 0%, hsl(222, 47%, 4%) 100%);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    animation: commFsIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+}
+
+@keyframes commFsIn {
+    from { opacity: 0; transform: scale(1.02); }
+    to   { opacity: 1; transform: scale(1); }
+}
+@keyframes commFsOut {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.98); }
+}
+
+.comm-fs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.comm-fs-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.3rem 1rem;
+}
+
+.comm-fs-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 2rem;
+    cursor: default;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.comm-fs-priority-bar {
+    width: 60px;
+    height: 5px;
+    border-radius: 999px;
+    margin-bottom: -0.5rem;
+}
+.comm-fs-priority-bar.pri-info    { background: var(--color-primary); box-shadow: 0 0 16px rgba(59,130,246,0.6); }
+.comm-fs-priority-bar.pri-warning { background: var(--color-warning); box-shadow: 0 0 16px rgba(245,158,11,0.6); }
+.comm-fs-priority-bar.pri-urgent  { background: var(--color-danger);  box-shadow: 0 0 16px rgba(239,68,68,0.6); animation: urgentPulse 1.2s infinite; }
+
+@keyframes urgentPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(239,68,68,0.6); }
+    50%       { box-shadow: 0 0 32px rgba(239,68,68,0.9); }
+}
+
+.comm-fs-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    width: 100%;
+}
+
+.comm-fs-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.comm-fs-icon svg { width: 32px; height: 32px; }
+.pri-info-fs  .comm-fs-icon { background: rgba(59,130,246,0.15);  color: var(--color-primary); }
+.pri-warning-fs .comm-fs-icon { background: rgba(245,158,11,0.15); color: var(--color-warning); }
+.pri-urgent-fs  .comm-fs-icon { background: rgba(239,68,68,0.15);  color: var(--color-danger); }
+
+.comm-fs-text { flex: 1; }
+.comm-fs-text h1 {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    letter-spacing: -0.5px;
+}
+.comm-fs-text p {
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.comm-fs-image {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--color-border);
+    flex-shrink: 0;
+    box-shadow: var(--shadow-soft);
+}
+
+.comm-fs-signature {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+}
+.comm-fs-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.15);
+}
+.comm-fs-sig-info { display: flex; flex-direction: column; }
+.comm-fs-sig-info span { font-size: 1rem; font-weight: 700; }
+.comm-fs-sig-info small { font-size: 0.8rem; color: var(--text-dimmed); }
+.comm-fs-date { margin-left: auto; font-size: 0.8rem; color: var(--text-dimmed); }
+
+/* --- FOOTER CON PROGRESS BAR --- */
+.comm-fs-footer {
+    padding: 1rem 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+.comm-fs-progress-wrap {
+    width: 100%;
+    max-width: 500px;
+    height: 4px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.comm-fs-progress-bar {
+    height: 100%;
+    background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+    border-radius: 999px;
+    width: 100%;
+    transition: width 1s linear;
+}
+.comm-fs-hint {
+    font-size: 0.8rem;
+    color: var(--text-dimmed);
 }
 
 .comm-card {

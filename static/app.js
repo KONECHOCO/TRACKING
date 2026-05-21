@@ -39,9 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Avvia auto-scroll ogni 1 minuto
     startAutoScroll();
 
-    // Carica comunicazioni
+    // Carica comunicazioni e avvia ciclo
     fetchComunicazioni();
     setInterval(fetchComunicazioni, 30000);
+    startCommCycle();
 
     // Pulsante apertura pannello comunicazioni
     document.getElementById('btn-open-comm').addEventListener('click', openCommPanel);
@@ -698,6 +699,7 @@ function showToast(title, message, type = 'info') {
     `;
     
     container.appendChild(toast);
+    playSound('toast');
     lucide.createIcons();
     
     setTimeout(() => {
@@ -830,7 +832,10 @@ async function publishComm() {
         removeImage();
 
         showToast('Comunicazione Pubblicata!', `"${title}" è ora visibile a tutti.`, 'success');
-        fetchComunicazioni();
+        await fetchComunicazioni();
+        closeCommPanel();
+        // Mostra subito full-screen la comunicazione appena pubblicata
+        if (activeComms.length > 0) setTimeout(() => showFullscreenComm(activeComms[0]), 400);
         switchCommTab('list');
 
     } catch (e) {
@@ -887,53 +892,146 @@ async function loadCommList() {
     }
 }
 
-// Recupera e mostra banner nella dashboard
+// ==========================================================================
+//  SUONI NOTIFICA (Web Audio API — nessun file esterno)
+// ==========================================================================
+let audioCtx = null;
+
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+}
+
+function playSound(type = 'toast') {
+    try {
+        const ctx = getAudioCtx();
+        const notes = type === 'comm'
+            ? [523.25, 659.25, 783.99, 1046.5]  // C5 E5 G5 C6 — accordo trionfale
+            : [440, 523.25];                      // A4 C5 — tocco leggero toast
+
+        notes.forEach((freq, i) => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const t = ctx.currentTime + i * 0.18;
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(type === 'comm' ? 0.25 : 0.12, t + 0.04);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+            osc.start(t);
+            osc.stop(t + 0.6);
+        });
+    } catch (e) { /* audio non disponibile */ }
+}
+
+// ==========================================================================
+//  SCHERMATA FULL-SCREEN COMUNICAZIONE
+// ==========================================================================
+let fsTimer       = null;
+let fsCountdown   = 30;
+let activeComms   = [];
+let lastCommIds   = new Set();
+let fsCycleTimer  = null;
+
+const iconMap = { info: 'info', warning: 'alert-triangle', urgent: 'alert-octagon' };
+const labelMap = { info: '📋 INFORMAZIONE', warning: '⚠️ AVVISO', urgent: '🚨 URGENTE' };
+
+function showFullscreenComm(comm) {
+    const fs = document.getElementById('comm-fullscreen');
+
+    // Popola contenuto
+    document.getElementById('comm-fs-title').textContent   = comm.title;
+    document.getElementById('comm-fs-message').textContent = comm.message;
+    document.getElementById('comm-fs-name').textContent    = comm.name;
+    document.getElementById('comm-fs-role').textContent    = comm.role || '';
+    document.getElementById('comm-fs-date').textContent    = comm.created_at;
+    document.getElementById('comm-fs-label').textContent   = labelMap[comm.priority] || '📢 COMUNICAZIONE';
+
+    const initials = comm.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    document.getElementById('comm-fs-avatar').textContent = initials;
+
+    // Icona priorità
+    const iconEl = document.getElementById('comm-fs-icon');
+    iconEl.innerHTML = `<i data-lucide="${iconMap[comm.priority] || 'info'}"></i>`;
+
+    // Barra priorità
+    const bar = document.getElementById('comm-fs-priority-bar');
+    bar.className = `comm-fs-priority-bar pri-${comm.priority}`;
+
+    // Immagine
+    const img = document.getElementById('comm-fs-image');
+    if (comm.image) { img.src = comm.image; img.style.display = 'block'; }
+    else            { img.style.display = 'none'; }
+
+    // Mostra
+    fs.style.display = 'flex';
+    lucide.createIcons();
+    playSound('comm');
+
+    // Countdown 30s
+    fsCountdown = 30;
+    document.getElementById('comm-fs-countdown').textContent = fsCountdown;
+    document.getElementById('comm-fs-progress').style.width  = '100%';
+
+    clearInterval(fsTimer);
+    fsTimer = setInterval(() => {
+        fsCountdown--;
+        document.getElementById('comm-fs-countdown').textContent = fsCountdown;
+        const pct = (fsCountdown / 30) * 100;
+        document.getElementById('comm-fs-progress').style.width = pct + '%';
+        if (fsCountdown <= 0) closeFullscreenComm();
+    }, 1000);
+}
+
+function closeFullscreenComm() {
+    clearInterval(fsTimer);
+    const fs = document.getElementById('comm-fullscreen');
+    fs.style.animation = 'commFsOut 0.35s ease forwards';
+    setTimeout(() => {
+        fs.style.display    = 'none';
+        fs.style.animation  = '';
+    }, 350);
+}
+
+// Ciclo automatico comunicazioni (ogni 3 minuti)
+function startCommCycle() {
+    clearInterval(fsCycleTimer);
+    fsCycleTimer = setInterval(() => {
+        if (activeComms.length > 0) {
+            showFullscreenComm(activeComms[0]);
+        }
+    }, 3 * 60 * 1000);
+}
+
+// Recupera comunicazioni e aggiorna badge
 async function fetchComunicazioni() {
     try {
         const res  = await fetch('/api/comunicazioni');
         const list = await res.json();
+        activeComms = list;
 
-        const banner = document.getElementById('comm-banner');
-        const badge  = document.getElementById('comm-count-badge');
-
+        const badge = document.getElementById('comm-count-badge');
         if (list.length === 0) {
-            banner.style.display = 'none';
-            badge.style.display  = 'none';
+            badge.style.display = 'none';
             return;
         }
-
-        badge.textContent = list.length;
+        badge.textContent   = list.length;
         badge.style.display = 'flex';
-        banner.style.display = 'flex';
 
-        const iconMap = { info: 'info', warning: 'alert-triangle', urgent: 'alert-octagon' };
+        // Controlla se ci sono comunicazioni nuove
+        const newIds = list.filter(c => !lastCommIds.has(c.id));
+        if (newIds.length > 0 && lastCommIds.size > 0) {
+            // Nuova comunicazione arrivata — mostra subito full-screen
+            showFullscreenComm(newIds[0]);
+        } else if (lastCommIds.size === 0 && list.length > 0) {
+            // Prima volta che carichiamo con comunicazioni — mostra dopo 3s
+            setTimeout(() => showFullscreenComm(list[0]), 3000);
+        }
 
-        banner.innerHTML = list.map(c => {
-            const initials = c.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-            const imageHtml = c.image
-                ? `<img src="${c.image}" class="comm-card-side-image" alt="Immagine comunicazione">`
-                : '';
-            return `
-                <div class="comm-card pri-${c.priority}">
-                    <div class="comm-card-icon"><i data-lucide="${iconMap[c.priority] || 'info'}"></i></div>
-                    <div class="comm-card-body">
-                        <div class="comm-card-title">${c.title}</div>
-                        <div class="comm-card-msg">${c.message}</div>
-                        <div class="comm-card-signature">
-                            <div class="comm-sig-avatar">${initials}</div>
-                            <div class="comm-sig-info">
-                                <span class="comm-sig-name">${c.name}</span>
-                                ${c.role ? `<span class="comm-sig-role">${c.role}</span>` : ''}
-                            </div>
-                            <span class="comm-sig-date"><i data-lucide="clock" style="width:11px;height:11px;display:inline;vertical-align:middle"></i> ${c.created_at}</span>
-                        </div>
-                    </div>
-                    ${imageHtml}
-                </div>
-            `;
-        }).join('');
+        lastCommIds = new Set(list.map(c => c.id));
 
-        lucide.createIcons();
     } catch (e) {
         console.warn('Comunicazioni non disponibili:', e);
     }
