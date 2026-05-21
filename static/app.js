@@ -714,21 +714,39 @@ function showToast(title, message, type = 'info') {
     }, 4500);
 }
 
-// --- AUTO-SCROLL OGNI 2 MINUTI ---
-function startAutoScroll() {
-    setInterval(() => {
-        // Scrolla fino all'intestazione della tabella
-        const tableSection = document.querySelector('.data-section');
-        if (tableSection) {
-            const targetY = tableSection.getBoundingClientRect().top + window.scrollY - 16;
+// --- HELPER SLEEP ---
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+// --- AUTO-SCROLL + CICLO PAGINE TABELLA ---
+async function runScrollCycle() {
+    const tableSection = document.querySelector('.data-section');
+    if (!tableSection) return;
+
+    const targetY      = tableSection.getBoundingClientRect().top + window.scrollY - 16;
+    const timePerPage  = 5000; // 5 secondi per pagina
+    const totalPages   = Math.ceil(filteredData.length / itemsPerPage);
+
+    // Porta la tabella in cima allo schermo
+    window.scrollTo({ top: targetY, behavior: 'smooth' });
+
+    // Cicla su ogni pagina
+    for (let p = 1; p <= totalPages; p++) {
+        if (p > 1) {
+            currentPage = p;
+            renderTable();
             window.scrollTo({ top: targetY, behavior: 'smooth' });
         }
+        await sleep(timePerPage);
+    }
 
-        // Dopo 10 secondi torna in cima
-        setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 10000);
-    }, 60000); // ogni 1 minuto
+    // Torna alla pagina 1 e scrolla in cima
+    currentPage = 1;
+    renderTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startAutoScroll() {
+    setInterval(runScrollCycle, 60000); // ogni 1 minuto
 }
 
 // ==========================================================================
