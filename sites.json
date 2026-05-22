@@ -3,7 +3,7 @@
   "sites": {
     "liscate": {
       "name": "LISCATE",
-      "color": "#3b82f6",
+      "color": "#f97316",
       "as400_host": "192.168.150.12",
       "uid": "KONEIN1",
       "pwd": "KONEI"

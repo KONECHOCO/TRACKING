@@ -1720,6 +1720,49 @@ body {
 #kpi-colli-partenza .kpi-value { color: hsl(327, 90%, 60%); }
 
 /* ==========================================================================
+   INDICATORE MAGAZZINO FISSO
+   ========================================================================== */
+.warehouse-indicator {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: rgba(10, 15, 28, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 0.55rem 1.2rem 0.55rem 0.8rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.wh-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 1.8s infinite;
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+.wh-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-dimmed);
+}
+.wh-name {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: color 0.4s ease;
+}
+
+/* ==========================================================================
    SEZIONE VETTORI
    ========================================================================== */
 

@@ -737,16 +737,29 @@ async function loadSiteInfo() {
         const res  = await fetch('/api/sites');
         const data = await res.json();
 
-        // Aggiorna badge
+        // Aggiorna badge header
         const badge = document.getElementById('site-badge');
         const dot   = document.getElementById('site-dot');
         const name  = document.getElementById('site-name');
 
-        name.textContent       = data.active_name;
-        dot.style.background   = data.active_color;
-        dot.style.boxShadow    = `0 0 8px ${data.active_color}`;
+        name.textContent        = data.active_name;
+        dot.style.background    = data.active_color;
+        dot.style.boxShadow     = `0 0 8px ${data.active_color}`;
         badge.style.borderColor = data.active_color + '66';
         badge.style.background  = data.active_color + '1a';
+
+        // Aggiorna indicatore magazzino fisso
+        const whDot  = document.getElementById('wh-dot');
+        const whName = document.getElementById('wh-name');
+        const whBox  = document.getElementById('warehouse-indicator');
+        if (whDot && whName && whBox) {
+            whDot.style.background  = data.active_color;
+            whDot.style.boxShadow   = `0 0 8px ${data.active_color}`;
+            whName.textContent       = data.active_name;
+            whName.style.color       = data.active_color;
+            whBox.style.borderColor  = data.active_color + '55';
+            whBox.style.boxShadow    = `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${data.active_color}22`;
+        }
 
         // Popola dropdown
         const dropdown = document.getElementById('site-dropdown');
@@ -828,18 +841,18 @@ async function runScrollCycle() {
         renderTable();
     }
 
-    // ── 2. Sezione Vettori: KPI + grafici ──
+    // ── 2. Sezione Vettori: KPI + grafici (15s) ──
     if (vettoriDivider) {
         const vettY = vettoriDivider.getBoundingClientRect().top + window.scrollY - 16;
         window.scrollTo({ top: vettY, behavior: 'smooth' });
-        await sleep(timePerPage + 2000); // +2s extra per leggere i grafici
+        await sleep(15000);
     }
 
-    // ── 3. Tabella vettori (se presente e scrollabile) ──
+    // ── 3. Tabella vettori (15s) ──
     if (vettoriTable) {
         const vtY = vettoriTable.getBoundingClientRect().top + window.scrollY - 16;
         window.scrollTo({ top: vtY, behavior: 'smooth' });
-        await sleep(timePerPage);
+        await sleep(15000);
     }
 
     // ── 4. Torna in cima ──
