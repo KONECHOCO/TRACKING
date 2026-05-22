@@ -146,6 +146,54 @@ def update_mock_data(data):
     return data
 
 
+# 🚛 Ordini chiusi oggi per vettore
+def get_vettori():
+    try:
+        cnx = get_connection()
+        cur = cnx.cursor()
+        sql = """
+        SELECT TKVE01 AS COD_VETTORE, VERAG1 AS VETTORE,
+               SUM(TKCOLL)  AS COLLI_SPEDITO,
+               SUM(TKPEZZ)  AS PEZZI_SPEDITO,
+               COUNT(TKNUPB) AS NR_ORDER_SPEDITO,
+               SUM(T2PALE)  AS BANCALI,
+               COUNT(DISTINCT SPNCAM) AS CAMION
+        FROM CDFILE.TRACK13L
+        LEFT JOIN CDFILE.TRAC201L  ON TKINDE = T2INDE AND TKORSP = T2ORSP
+        LEFT JOIN CDFILE.SPELE01L  ON SPMAND = TKINDE AND SPNROR = TKORSP
+        LEFT JOIN CDFILE.NKVET02L  ON TKVE01 = VEVETT
+        WHERE TKDTPA = varchar_format(current_date, 'YYYYMMDD')
+        GROUP BY TKVE01, VERAG1
+        ORDER BY COLLI_SPEDITO DESC
+        """
+        cur.execute(sql)
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            result.append({
+                "cod_vettore":     (r.COD_VETTORE or "").strip(),
+                "vettore":         (r.VETTORE     or "N/D").strip(),
+                "colli_spedito":   int(r.COLLI_SPEDITO   or 0),
+                "pezzi_spedito":   int(r.PEZZI_SPEDITO   or 0),
+                "nr_order_spedito":int(r.NR_ORDER_SPEDITO or 0),
+                "bancali":         int(r.BANCALI          or 0),
+                "camion":          int(r.CAMION           or 0),
+            })
+        cur.close()
+        cnx.close()
+        return {"stato": "connected", "dati": result}
+    except Exception as e:
+        print(f"[WARN] Vettori: fallback simulato. Errore: {e}")
+        mock = [
+            {"cod_vettore": "BRT",  "vettore": "BRT CORRIERE ESPRESSO",  "colli_spedito": 312, "pezzi_spedito": 1850, "nr_order_spedito": 28, "bancali": 14, "camion": 3},
+            {"cod_vettore": "GLS",  "vettore": "GLS ITALY SRL",          "colli_spedito": 198, "pezzi_spedito":  980, "nr_order_spedito": 17, "bancali":  9, "camion": 2},
+            {"cod_vettore": "DHL",  "vettore": "DHL EXPRESS ITALY",       "colli_spedito": 145, "pezzi_spedito":  720, "nr_order_spedito": 12, "bancali":  6, "camion": 1},
+            {"cod_vettore": "TNT",  "vettore": "TNT ITALIA SRL",          "colli_spedito":  87, "pezzi_spedito":  410, "nr_order_spedito":  8, "bancali":  4, "camion": 1},
+            {"cod_vettore": "SDA",  "vettore": "SDA EXPRESS COURIER",     "colli_spedito":  54, "pezzi_spedito":  260, "nr_order_spedito":  5, "bancali":  2, "camion": 1},
+        ]
+        return {"stato": "simulated", "dati": mock, "errore": str(e)}
+
+
 # 📦 Funzione principale per estrarre i dati
 def get_ricezioni(priorita=None):
     global _simulated_data, _last_simulation_update

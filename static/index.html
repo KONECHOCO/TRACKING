@@ -243,6 +243,39 @@
             </div>
         </section>
         
+        <!-- SEZIONE VETTORI -->
+        <section class="data-section vettori-section">
+            <div class="section-header">
+                <h2><i data-lucide="truck"></i> Ordini Chiusi Oggi per Vettore</h2>
+                <div class="header-actions">
+                    <div id="vettori-conn-badge" class="vettori-conn-badge"></div>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table vettori-table" id="vettori-table">
+                    <thead>
+                        <tr>
+                            <th>Cod.</th>
+                            <th>Vettore</th>
+                            <th class="text-center">Colli Spediti</th>
+                            <th class="text-center">Pezzi Spediti</th>
+                            <th class="text-center">N° Ordini</th>
+                            <th class="text-center">Bancali</th>
+                            <th class="text-center">Camion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vettori-body">
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="spinner-loader"></div>
+                                <p>Caricamento dati vettori...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- FOOTER DI SISTEMA -->
         <footer class="app-footer-bar">
             <p>&copy; 2026 Team IT MM Operations Dashboard Tracking</p>

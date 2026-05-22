@@ -2,7 +2,7 @@ from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from trac2 import get_ricezioni
+from trac2 import get_ricezioni, get_vettori
 import os, json, base64
 from collections import defaultdict
 from datetime import datetime
@@ -89,6 +89,13 @@ def get_dati_completi():
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+@app.get("/api/logistica/vettori")
+def get_dati_vettori():
+    try:
+        res = get_vettori()
+        return res
     except Exception as e:
         return {"error": str(e)}
 

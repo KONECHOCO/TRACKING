@@ -1718,3 +1718,65 @@ body {
 #kpi-colli-spediti .kpi-value  { color: var(--color-success); }
 #kpi-ordini-chiusi .kpi-value  { color: var(--color-secondary); }
 #kpi-colli-partenza .kpi-value { color: hsl(327, 90%, 60%); }
+
+/* ==========================================================================
+   SEZIONE VETTORI
+   ========================================================================== */
+.vettori-section {
+    border-top: 3px solid var(--color-success);
+}
+.vettori-section .section-header h2 {
+    border-left-color: var(--color-success);
+}
+.vettori-table thead th {
+    background: rgba(16, 185, 129, 0.04);
+}
+.vettori-table tbody tr:hover {
+    background: rgba(16, 185, 129, 0.04);
+}
+.vettore-name {
+    font-weight: 600;
+    color: var(--text-main);
+}
+.vettore-code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    background: rgba(16,185,129,0.1);
+    color: var(--color-success);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid rgba(16,185,129,0.2);
+    display: inline-block;
+}
+.camion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--color-warning);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.bancali-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--color-secondary);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.vettori-conn-badge {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    color: var(--text-dimmed);
+    background: rgba(255,255,255,0.03);
+}

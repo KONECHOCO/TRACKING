@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchComunicazioni, 30000);
     startCommCycle();
 
+    // Carica dati vettori
+    fetchVettori();
+
     // Pulsante apertura pannello comunicazioni
     document.getElementById('btn-open-comm').addEventListener('click', openCommPanel);
 
@@ -130,7 +133,13 @@ async function fetchDashboardData(manual = false) {
         
         // Ricalcola i filtri e renderizza tabella e grafici
         applyFiltersAndRender();
-        
+
+        // Aggiorna badge sito (FIX: rimane sincronizzato ad ogni refresh)
+        loadSiteInfo();
+
+        // Aggiorna anche i vettori
+        fetchVettori();
+
     } catch (error) {
         console.error("Errore nel recupero dati:", error);
         showToast("Errore di Caricamento", "Impossibile recuperare i dati outbound dall'AS/400.", "warning");
@@ -1166,7 +1175,9 @@ function closeFullscreenComm() {
 function startCommCycle() {
     clearInterval(fsCycleTimer);
     fsCycleTimer = setInterval(() => {
-        if (activeComms.length > 0) {
+        // FIX: non mostrare fullscreen se l'utente sta usando il pannello
+        const panelOpen = document.getElementById('comm-panel').classList.contains('open');
+        if (activeComms.length > 0 && !panelOpen) {
             showFullscreenComm(activeComms[0]);
         }
     }, 3 * 60 * 1000);
@@ -1188,13 +1199,19 @@ async function fetchComunicazioni() {
         badge.style.display = 'flex';
 
         // Controlla se ci sono comunicazioni nuove
+        // FIX: non interrompere l'utente se sta compilando il pannello
+        const panelOpen = document.getElementById('comm-panel').classList.contains('open');
         const newIds = list.filter(c => !lastCommIds.has(c.id));
-        if (newIds.length > 0 && lastCommIds.size > 0) {
+        if (!panelOpen && newIds.length > 0 && lastCommIds.size > 0) {
             // Nuova comunicazione arrivata — mostra subito full-screen
             showFullscreenComm(newIds[0]);
-        } else if (lastCommIds.size === 0 && list.length > 0) {
+        } else if (!panelOpen && lastCommIds.size === 0 && list.length > 0) {
             // Prima volta che carichiamo con comunicazioni — mostra dopo 3s
-            setTimeout(() => showFullscreenComm(list[0]), 3000);
+            setTimeout(() => {
+                if (!document.getElementById('comm-panel').classList.contains('open')) {
+                    showFullscreenComm(list[0]);
+                }
+            }, 3000);
         }
 
         lastCommIds = new Set(list.map(c => c.id));
@@ -1202,6 +1219,56 @@ async function fetchComunicazioni() {
     } catch (e) {
         console.warn('Comunicazioni non disponibili:', e);
     }
+}
+
+// ==========================================================================
+//  SEZIONE VETTORI
+// ==========================================================================
+
+async function fetchVettori() {
+    try {
+        const res  = await fetch('/api/logistica/vettori');
+        const data = await res.json();
+        renderVettori(data.dati || []);
+        // badge connessione vettori
+        const badge = document.getElementById('vettori-conn-badge');
+        if (badge) {
+            badge.textContent = data.stato === 'connected' ? '🟢 Live AS/400' : '🟡 Simulazione';
+        }
+    } catch (e) {
+        console.warn('Vettori non disponibili:', e);
+    }
+}
+
+function renderVettori(dati) {
+    const tbody = document.getElementById('vettori-body');
+    if (!tbody) return;
+
+    if (!dati || dati.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <i data-lucide="truck" style="width:24px;height:24px;margin-bottom:0.5rem;display:inline-block;"></i>
+                    <p>Nessuna spedizione registrata oggi per vettore.</p>
+                </td>
+            </tr>`;
+        lucide.createIcons();
+        return;
+    }
+
+    tbody.innerHTML = dati.map((r, idx) => `
+        <tr>
+            <td><span class="vettore-code">${r.cod_vettore || '—'}</span></td>
+            <td class="vettore-name">${r.vettore || 'N/D'}</td>
+            <td class="numeric text-center" style="font-weight:bold;color:var(--color-success);">${(r.colli_spedito || 0).toLocaleString('it-IT')}</td>
+            <td class="numeric text-center">${(r.pezzi_spedito || 0).toLocaleString('it-IT')}</td>
+            <td class="numeric text-center">${(r.nr_order_spedito || 0).toLocaleString('it-IT')}</td>
+            <td class="numeric text-center"><span class="bancali-badge">📦 ${r.bancali || 0}</span></td>
+            <td class="numeric text-center"><span class="camion-badge">🚛 ${r.camion || 0}</span></td>
+        </tr>
+    `).join('');
+
+    lucide.createIcons();
 }
 
 // --- OROLOGIO ---
