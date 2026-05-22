@@ -1725,8 +1725,7 @@ body {
 .warehouse-indicator {
     position: fixed;
     top: 1.1rem;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 1.5rem;
     z-index: 2000;
     display: flex;
     align-items: center;
