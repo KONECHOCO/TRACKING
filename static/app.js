@@ -948,6 +948,8 @@ async function startPresentationMode() {
     } catch(e) {
         console.error('Errore presentazione:', e);
         presentationActive = false;
+        // Auto-riavvio dopo 10s in caso di errore
+        setTimeout(startPresentationMode, 10000);
     }
 }
 
