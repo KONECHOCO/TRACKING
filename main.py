@@ -3,14 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from trac2 import get_ricezioni, get_vettori
-import os, json, base64
-from collections import defaultdict
+import os, json, base64, shutil
 from datetime import datetime
 from typing import Optional
 
 app = FastAPI(title="Dashboard MM Operations Tracking", version="1.0.0")
 
-# Abilitazione CORS per consentire chiamate da altre porte/host
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,95 +17,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Assicuriamoci che la cartella 'static' esista
-static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+# --- DIRECTORY ---
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(BASE_DIR, "static")
 if not os.path.exists(static_dir):
     os.makedirs(static_dir)
 
-# --- Endpoint API legacy per compatibilità Streamlit ---
+# DATA_DIR: usa C:\ProgramData\MMTracking — sempre scrivibile senza admin
+# Questo risolve l'errore di scrittura quando il server gira come utente standard
+DATA_DIR = os.path.join(os.environ.get("PROGRAMDATA", "C:\\ProgramData"), "MMTracking")
+os.makedirs(DATA_DIR, exist_ok=True)
 
-@app.get("/api/logistica/ricezioni")
-def ricezioni():
-    try:
-        res = get_ricezioni()
-        return res.get("dati", [])
-    except Exception as e:
-        return {"error": str(e)}
+SITES_FILE = os.path.join(DATA_DIR, "sites.json")
+COMM_FILE  = os.path.join(DATA_DIR, "comunicazioni.json")
 
-@app.get("/api/logistica/kpi")
-def get_kpis():
-    try:
-        res = get_ricezioni()
-        dati = res.get("dati", [])
-        return {
-            "colli_chiusi": sum(r.get("colli_chiusi", 0) for r in dati),
-            "colli_spediti": sum(r.get("colli_spedito", 0) for r in dati),
-            "colli_partenza": sum(r.get("colli_partenza", 0) for r in dati)
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-# --- Nuovi Endpoint Unificati per Dashboard High-Fidelity ---
-
-@app.get("/api/logistica/dati")
-def get_dati_completi():
-    try:
-        res = get_ricezioni()
-        dati = res.get("dati", [])
-        
-        # Calcolo KPI aggregati al volo
-        colli_chiusi_tot = sum(r.get("colli_chiusi", 0) for r in dati)
-        pezzi_chiusi_tot = sum(r.get("pezzi_chiusi", 0) for r in dati)
-        ordini_chiusi_tot = sum(r.get("nr_order_chiusi", 0) for r in dati)
-        
-        colli_spediti_tot = sum(r.get("colli_spedito", 0) for r in dati)
-        pezzi_spediti_tot = sum(r.get("pezzi_spedito", 0) for r in dati)
-        ordini_spediti_tot = sum(r.get("nr_order_spedito", 0) for r in dati)
-        
-        colli_partenza_tot = sum(r.get("colli_partenza", 0) for r in dati)
-        pezzi_partenza_tot = sum(r.get("pezzi_partenza", 0) for r in dati)
-        ordini_partenza_tot = sum(r.get("nr_order_partenza", 0) for r in dati)
-        
-        clienti_unici = len(set(r.get("tkinde") for r in dati if r.get("tkinde")))
-        
-        return {
-            "stato": res.get("stato"),
-            "errore": res.get("errore"),
-            "kpis": {
-                "colli_chiusi_tot": colli_chiusi_tot,
-                "pezzi_chiusi_tot": pezzi_chiusi_tot,
-                "ordini_chiusi_tot": ordini_chiusi_tot,
-                "colli_spediti_tot": colli_spediti_tot,
-                "pezzi_spediti_tot": pezzi_spediti_tot,
-                "ordini_spediti_tot": ordini_spediti_tot,
-                "colli_partenza_tot": colli_partenza_tot,
-                "pezzi_partenza_tot": pezzi_partenza_tot,
-                "ordini_partenza_tot": ordini_partenza_tot,
-                "clienti_totali": clienti_unici
-            },
-            "dati_dettaglio": dati
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-
-@app.get("/api/logistica/vettori")
-def get_dati_vettori():
-    try:
-        res = get_vettori()
-        return res
-    except Exception as e:
-        return {"error": str(e)}
+# Migrazione automatica: copia sites.json dall'app a ProgramData se non esiste
+_default_sites = os.path.join(BASE_DIR, "sites.json")
+if not os.path.exists(SITES_FILE) and os.path.exists(_default_sites):
+    shutil.copy2(_default_sites, SITES_FILE)
+    print(f"[INFO] sites.json migrato -> {SITES_FILE}")
 
 # --- GESTIONE SITI ---
-SITES_FILE = os.path.join(BASE_DIR if 'BASE_DIR' in dir() else os.path.dirname(os.path.abspath(__file__)), "sites.json")
-
 def load_sites():
-    with open(os.path.join(BASE_DIR, "sites.json"), "r", encoding="utf-8") as f:
+    if os.path.exists(SITES_FILE):
+        with open(SITES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    # fallback al file originale nell'app
+    with open(_default_sites, "r", encoding="utf-8") as f:
         return json.load(f)
 
 def save_sites(data):
-    with open(os.path.join(BASE_DIR, "sites.json"), "w", encoding="utf-8") as f:
+    with open(SITES_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 @app.get("/api/sites")
@@ -131,12 +71,7 @@ def switch_site(site_key: str):
     save_sites(cfg)
     return {"status": "ok", "active": site_key, "name": cfg["sites"][site_key]["name"]}
 
-# --- BASE DIR ---
-BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
-
 # --- COMUNICAZIONI ---
-COMM_FILE  = os.path.join(BASE_DIR, "comunicazioni.json")
-
 def load_comms():
     if os.path.exists(COMM_FILE):
         with open(COMM_FILE, "r", encoding="utf-8") as f:
@@ -194,18 +129,55 @@ def delete_comunicazione(comm_id: int):
     save_comms(comms)
     return {"status": "deleted"}
 
-# --- Servizio Frontend Statico ---
+# --- DATI DASHBOARD ---
+@app.get("/api/logistica/ricezioni")
+def ricezioni():
+    try:
+        res = get_ricezioni()
+        return res.get("dati", [])
+    except Exception as e:
+        return {"error": str(e)}
 
-# Serviamo la pagina principale alla root dell'applicazione
+@app.get("/api/logistica/dati")
+def get_dati_completi():
+    try:
+        res  = get_ricezioni()
+        dati = res.get("dati", [])
+        return {
+            "stato":  res.get("stato"),
+            "errore": res.get("errore"),
+            "kpis": {
+                "colli_chiusi_tot":    sum(r.get("colli_chiusi", 0)      for r in dati),
+                "pezzi_chiusi_tot":    sum(r.get("pezzi_chiusi", 0)      for r in dati),
+                "ordini_chiusi_tot":   sum(r.get("nr_order_chiusi", 0)   for r in dati),
+                "colli_spediti_tot":   sum(r.get("colli_spedito", 0)     for r in dati),
+                "pezzi_spediti_tot":   sum(r.get("pezzi_spedito", 0)     for r in dati),
+                "ordini_spediti_tot":  sum(r.get("nr_order_spedito", 0)  for r in dati),
+                "colli_partenza_tot":  sum(r.get("colli_partenza", 0)    for r in dati),
+                "pezzi_partenza_tot":  sum(r.get("pezzi_partenza", 0)    for r in dati),
+                "ordini_partenza_tot": sum(r.get("nr_order_partenza", 0) for r in dati),
+                "clienti_totali":      len(set(r.get("tkinde") for r in dati if r.get("tkinde")))
+            },
+            "dati_dettaglio": dati
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/logistica/vettori")
+def get_dati_vettori():
+    try:
+        return get_vettori()
+    except Exception as e:
+        return {"stato": "error", "dati": [], "errore": str(e)}
+
+# --- FRONTEND STATICO ---
 @app.get("/")
 def home():
     return FileResponse(os.path.join(static_dir, "index.html"))
 
-# Montiamo la directory static per servire CSS e JS
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 if __name__ == "__main__":
     import uvicorn
-    # Avviamo il server su localhost porta 8080
-    print("[INFO] Avvio server Dashboard Logistica...")
+    print(f"[INFO] Avvio server... DATA_DIR={DATA_DIR}")
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)

@@ -9,11 +9,19 @@ _simulated_data = None
 _last_simulation_update = datetime.datetime.now()
 
 # --- Lettura configurazione siti ---
-SITES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sites.json")
+# Legge da ProgramData (stesso percorso di main.py) per coerenza
+_PROG_DATA_SITES = os.path.join(
+    os.environ.get("PROGRAMDATA", "C:\\ProgramData"), "MMTracking", "sites.json"
+)
+_APP_DIR_SITES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sites.json")
+# Usa ProgramData se esiste, altrimenti fallback al file nell'app
+SITES_FILE = _PROG_DATA_SITES if os.path.exists(_PROG_DATA_SITES) else _APP_DIR_SITES
 
 def get_active_site():
     try:
-        with open(SITES_FILE, "r", encoding="utf-8") as f:
+        # Rilegge sempre il percorso aggiornato (ProgramData ha priorità)
+        sf = _PROG_DATA_SITES if os.path.exists(_PROG_DATA_SITES) else _APP_DIR_SITES
+        with open(sf, "r", encoding="utf-8") as f:
             cfg = json.load(f)
         active_key = cfg.get("active", "liscate")
         site = cfg["sites"].get(active_key, list(cfg["sites"].values())[0])

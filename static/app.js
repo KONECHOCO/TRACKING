@@ -806,7 +806,7 @@ async function runScrollCycle() {
     if (!tableSection || filteredData.length === 0) return;
 
     const targetY     = tableSection.getBoundingClientRect().top + window.scrollY - 16;
-    const timePerPage = 5000;
+    const timePerPage = 10000; // 10s per pagina
     const totalPages  = Math.ceil(filteredData.length / itemsPerPage);
 
     window.scrollTo({ top: targetY, behavior: 'smooth' });
@@ -851,6 +851,11 @@ function hideSiteTransition() {
     }, 350);
 }
 
+// Helper: controlla se il pannello comunicazioni è aperto
+function isCommPanelOpen() {
+    return document.getElementById('comm-panel').classList.contains('open');
+}
+
 // Loop presentazione: Liscate → Calvenzano → Liscate → …
 async function startPresentationMode() {
     if (presentationActive) return;
@@ -859,40 +864,50 @@ async function startPresentationMode() {
     try {
         const res  = await fetch('/api/sites');
         const data = await res.json();
-        const sitesList = data.sites; // [{key, name, color}, ...]
+        const sitesList = data.sites;
 
         if (sitesList.length < 2) {
-            // Un solo sito: cicla solo le pagine ogni 60s
             setInterval(runScrollCycle, 60000);
             return;
         }
 
-        // Trova l'indice corrente
         let idx = sitesList.findIndex(s => s.key === data.active);
 
         while (presentationActive) {
-            // 1. Pausa iniziale prima di scorrere
-            await sleep(5000);
+            // 1. Pausa iniziale (12s) — aumentata per dare più tempo di lettura
+            await sleep(12000);
 
-            // 2. Cicla pagine del sito corrente
+            // 2. Se il pannello è aperto, aspetta e riprova senza cambiare sito
+            if (isCommPanelOpen()) {
+                await sleep(15000);
+                continue;
+            }
+
+            // 3. Cicla pagine del sito corrente
             await runScrollCycle();
 
-            // 3. Pausa breve in cima prima del cambio
-            await sleep(2000);
+            // 4. Pausa in cima prima del cambio
+            await sleep(3000);
 
-            // 4. Passa al sito successivo
+            // 5. Controlla di nuovo prima della transizione
+            if (isCommPanelOpen()) {
+                continue;
+            }
+
+            // 6. Passa al sito successivo
             idx = (idx + 1) % sitesList.length;
             const nextSite = sitesList[idx];
 
-            // 5. Mostra schermata di transizione
+            // 7. Mostra schermata di transizione
             await showSiteTransition(nextSite);
 
-            // 6. Cambia sito e ricarica dati
+            // 8. Cambia sito e ricarica dati
             await fetch(`/api/sites/switch/${nextSite.key}`, { method: 'POST' });
             await loadSiteInfo();
             await fetchDashboardData();
+            await fetchVettori();
 
-            // 7. Nascondi transizione e torna in cima
+            // 9. Nascondi transizione e torna in cima
             hideSiteTransition();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
