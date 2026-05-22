@@ -1722,8 +1722,45 @@ body {
 /* ==========================================================================
    SEZIONE VETTORI
    ========================================================================== */
+
+/* Divisore titolo sezione */
+.vettori-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 2.5rem 0 0.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+.vettori-divider-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--color-success);
+    background: rgba(16,185,129,0.08);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 999px;
+    padding: 0.4rem 1.1rem;
+}
+.vettori-divider-label svg { width: 14px; height: 14px; }
+
+/* KPI card vettori: bordi colorati diversi */
+#kpi-v-colli   { border-top: 3px solid var(--color-success); }
+#kpi-v-ordini  { border-top: 3px solid hsl(175, 80%, 45%); }
+#kpi-v-bancali { border-top: 3px solid var(--color-secondary); }
+#kpi-v-camion  { border-top: 3px solid var(--color-warning); }
+
+#kpi-v-colli   .kpi-value { color: var(--color-success); }
+#kpi-v-ordini  .kpi-value { color: hsl(175, 80%, 45%); }
+#kpi-v-bancali .kpi-value { color: var(--color-secondary); }
+#kpi-v-camion  .kpi-value { color: var(--color-warning); }
+
 .vettori-section {
-    border-top: 3px solid var(--color-success);
+    border-top: none;
 }
 .vettori-section .section-header h2 {
     border-left-color: var(--color-success);

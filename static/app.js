@@ -806,7 +806,7 @@ async function runScrollCycle() {
     if (!tableSection || filteredData.length === 0) return;
 
     const targetY     = tableSection.getBoundingClientRect().top + window.scrollY - 16;
-    const timePerPage = 10000; // 10s per pagina
+    const timePerPage = 6000; // 6s per pagina
     const totalPages  = Math.ceil(filteredData.length / itemsPerPage);
 
     window.scrollTo({ top: targetY, behavior: 'smooth' });
@@ -839,7 +839,7 @@ async function showSiteTransition(siteInfo) {
     overlay.style.animation = 'commFsIn 0.4s cubic-bezier(0.16,1,0.3,1)';
     playSound('comm');
 
-    await sleep(2800);
+    await sleep(1800); // transizione breve
 }
 
 function hideSiteTransition() {
@@ -874,8 +874,8 @@ async function startPresentationMode() {
         let idx = sitesList.findIndex(s => s.key === data.active);
 
         while (presentationActive) {
-            // 1. Pausa iniziale (12s) — aumentata per dare più tempo di lettura
-            await sleep(12000);
+            // 1. Pausa iniziale (8s)
+            await sleep(8000);
 
             // 2. Se il pannello è aperto, aspetta e riprova senza cambiare sito
             if (isCommPanelOpen()) {
@@ -887,7 +887,7 @@ async function startPresentationMode() {
             await runScrollCycle();
 
             // 4. Pausa in cima prima del cambio
-            await sleep(3000);
+            await sleep(2000);
 
             // 5. Controlla di nuovo prima della transizione
             if (isCommPanelOpen()) {
@@ -1240,18 +1240,145 @@ async function fetchComunicazioni() {
 //  SEZIONE VETTORI
 // ==========================================================================
 
+let vettoriBarChart      = null;
+let vettoriDoughnutChart = null;
+let vettoriCamionChart   = null;
+
 async function fetchVettori() {
     try {
         const res  = await fetch('/api/logistica/vettori');
         const data = await res.json();
-        renderVettori(data.dati || []);
-        // badge connessione vettori
+        const dati = data.dati || [];
+
+        // Badge connessione
         const badge = document.getElementById('vettori-conn-badge');
-        if (badge) {
-            badge.textContent = data.stato === 'connected' ? '🟢 Live AS/400' : '🟡 Simulazione';
-        }
+        if (badge) badge.textContent = data.stato === 'connected' ? '🟢 Live AS/400' : '🟡 Simulazione';
+
+        renderVettoriKPI(dati);
+        renderVettoriCharts(dati);
+        renderVettori(dati);
     } catch (e) {
         console.warn('Vettori non disponibili:', e);
+    }
+}
+
+function renderVettoriKPI(dati) {
+    const totColli  = dati.reduce((s, r) => s + (r.colli_spedito    || 0), 0);
+    const totOrdini = dati.reduce((s, r) => s + (r.nr_order_spedito || 0), 0);
+    const totBancali= dati.reduce((s, r) => s + (r.bancali          || 0), 0);
+    const totCamion = dati.reduce((s, r) => s + (r.camion           || 0), 0);
+
+    const set = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) animateNumberValue(id, val);
+    };
+    set('val-v-colli',   totColli);
+    set('val-v-ordini',  totOrdini);
+    set('val-v-bancali', totBancali);
+    set('val-v-camion',  totCamion);
+}
+
+const VETTORI_PALETTE = [
+    '#10b981','#3b82f6','#8b5cf6','#f59e0b',
+    '#ec4899','#06b6d4','#64748b','#f97316'
+];
+
+function renderVettoriCharts(dati) {
+    if (!dati || dati.length === 0) return;
+
+    const labels  = dati.map(r => r.vettore || r.cod_vettore || 'N/D');
+    const colli   = dati.map(r => r.colli_spedito    || 0);
+    const bancali = dati.map(r => r.bancali           || 0);
+    const camion  = dati.map(r => r.camion            || 0);
+    const colors  = VETTORI_PALETTE.slice(0, dati.length);
+
+    const chartOpts = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top', labels: { color: '#94a3b8', font: { family: 'Outfit' } } },
+            tooltip: { titleFont: { family: 'Outfit' }, bodyFont: { family: 'Outfit' } }
+        }
+    };
+
+    // --- Bar: Colli per vettore ---
+    const ctxBar = document.getElementById('vettoriBarChart');
+    if (ctxBar) {
+        if (vettoriBarChart) {
+            vettoriBarChart.data.labels = labels;
+            vettoriBarChart.data.datasets[0].data = colli;
+            vettoriBarChart.data.datasets[0].backgroundColor = colors.map(c => c + 'cc');
+            vettoriBarChart.update();
+        } else {
+            vettoriBarChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Colli Spediti',
+                        data: colli,
+                        backgroundColor: colors.map(c => c + 'cc'),
+                        borderColor: colors,
+                        borderWidth: 1.5,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    ...chartOpts,
+                    plugins: { ...chartOpts.plugins, legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Outfit', size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { family: 'Outfit' } } }
+                    }
+                }
+            });
+        }
+    }
+
+    // --- Doughnut: distribuzione colli ---
+    const ctxDo = document.getElementById('vettoriDoughnutChart');
+    if (ctxDo) {
+        if (vettoriDoughnutChart) {
+            vettoriDoughnutChart.data.labels = labels;
+            vettoriDoughnutChart.data.datasets[0].data = colli;
+            vettoriDoughnutChart.data.datasets[0].backgroundColor = colors;
+            vettoriDoughnutChart.update();
+        } else {
+            vettoriDoughnutChart = new Chart(ctxDo, {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data: colli, backgroundColor: colors, borderWidth: 2, borderColor: '#0f172a', hoverOffset: 8 }] },
+                options: { ...chartOpts, cutout: '70%', plugins: { ...chartOpts.plugins, legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 10, padding: 8, font: { family: 'Outfit', size: 10 } } } } }
+            });
+        }
+    }
+
+    // --- Bar orizzontale: Camion e Bancali ---
+    const ctxCam = document.getElementById('vettoriCamionChart');
+    if (ctxCam) {
+        if (vettoriCamionChart) {
+            vettoriCamionChart.data.labels = labels;
+            vettoriCamionChart.data.datasets[0].data = camion;
+            vettoriCamionChart.data.datasets[1].data = bancali;
+            vettoriCamionChart.update();
+        } else {
+            vettoriCamionChart = new Chart(ctxCam, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Camion', data: camion,  backgroundColor: 'rgba(245,158,11,0.75)', borderColor: '#f59e0b', borderWidth: 1.5, borderRadius: 4 },
+                        { label: 'Bancali', data: bancali, backgroundColor: 'rgba(139,92,246,0.75)',  borderColor: '#8b5cf6', borderWidth: 1.5, borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    ...chartOpts,
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { family: 'Outfit' } } },
+                        y: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Outfit', size: 10 } } }
+                    }
+                }
+            });
+        }
     }
 }
 
@@ -1271,7 +1398,7 @@ function renderVettori(dati) {
         return;
     }
 
-    tbody.innerHTML = dati.map((r, idx) => `
+    tbody.innerHTML = dati.map(r => `
         <tr>
             <td><span class="vettore-code">${r.cod_vettore || '—'}</span></td>
             <td class="vettore-name">${r.vettore || 'N/D'}</td>

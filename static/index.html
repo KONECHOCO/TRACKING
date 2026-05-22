@@ -243,13 +243,90 @@
             </div>
         </section>
         
-        <!-- SEZIONE VETTORI -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- SEZIONE VETTORI                                               -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Separatore con titolo sezione -->
+        <div class="vettori-divider">
+            <span class="vettori-divider-label">
+                <i data-lucide="truck"></i>
+                Spedizioni per Vettore — Oggi
+            </span>
+            <div id="vettori-conn-badge" class="vettori-conn-badge"></div>
+        </div>
+
+        <!-- KPI VETTORI -->
+        <section class="kpi-grid">
+            <div class="kpi-card" id="kpi-v-colli">
+                <div class="kpi-icon icon-clienti"><i data-lucide="package-check"></i></div>
+                <div class="kpi-content">
+                    <h3>Colli Spediti</h3>
+                    <p class="kpi-value" id="val-v-colli">—</p>
+                    <span class="kpi-trend trend-neutral"><i data-lucide="info"></i> Totale colli partiti</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-v-ordini">
+                <div class="kpi-icon icon-pezzi"><i data-lucide="clipboard-list"></i></div>
+                <div class="kpi-content">
+                    <h3>Ordini Spediti</h3>
+                    <p class="kpi-value" id="val-v-ordini">—</p>
+                    <span class="kpi-trend trend-neutral"><i data-lucide="info"></i> N° ordini partiti oggi</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-v-bancali">
+                <div class="kpi-icon icon-righe"><i data-lucide="layers"></i></div>
+                <div class="kpi-content">
+                    <h3>Bancali</h3>
+                    <p class="kpi-value" id="val-v-bancali">—</p>
+                    <span class="kpi-trend trend-neutral"><i data-lucide="info"></i> Totale bancali caricati</span>
+                </div>
+            </div>
+            <div class="kpi-card" id="kpi-v-camion">
+                <div class="kpi-icon icon-colli"><i data-lucide="truck"></i></div>
+                <div class="kpi-content">
+                    <h3>Camion</h3>
+                    <p class="kpi-value" id="val-v-camion">—</p>
+                    <span class="kpi-trend trend-neutral"><i data-lucide="info"></i> Camion in partenza oggi</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- GRAFICI VETTORI -->
+        <section class="charts-section">
+            <div class="chart-card main-chart">
+                <div class="chart-header">
+                    <h2><i data-lucide="bar-chart-2"></i> Colli Spediti per Vettore (Oggi)</h2>
+                    <span class="chart-subtitle">Volume colli per corriere</span>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="vettoriBarChart"></canvas>
+                </div>
+            </div>
+            <div class="charts-subgrid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h2><i data-lucide="pie-chart"></i> Distribuzione Colli</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="vettoriDoughnutChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h2><i data-lucide="activity"></i> Camion e Bancali</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="vettoriCamionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TABELLA VETTORI -->
         <section class="data-section vettori-section">
             <div class="section-header">
-                <h2><i data-lucide="truck"></i> Ordini Chiusi Oggi per Vettore</h2>
-                <div class="header-actions">
-                    <div id="vettori-conn-badge" class="vettori-conn-badge"></div>
-                </div>
+                <h2><i data-lucide="table"></i> Dettaglio per Vettore</h2>
             </div>
             <div class="table-container">
                 <table class="data-table vettori-table" id="vettori-table">
