@@ -1336,9 +1336,13 @@ function renderVettoriCharts(dati) {
         }
     };
 
-    // --- Bar: Colli per vettore ---
+    // --- Bar orizzontale: Colli per vettore ---
     const ctxBar = document.getElementById('vettoriBarChart');
     if (ctxBar) {
+        // Altezza dinamica: almeno 32px per riga, minimo 300px
+        const barH = Math.max(300, labels.length * 34);
+        ctxBar.parentElement.style.height = barH + 'px';
+
         if (vettoriBarChart) {
             vettoriBarChart.data.labels = labels;
             vettoriBarChart.data.datasets[0].data = colli;
@@ -1355,15 +1359,31 @@ function renderVettoriCharts(dati) {
                         backgroundColor: colors.map(c => c + 'cc'),
                         borderColor: colors,
                         borderWidth: 1.5,
-                        borderRadius: 5
+                        borderRadius: 4
                     }]
                 },
                 options: {
+                    indexAxis: 'y',          // barre orizzontali
                     ...chartOpts,
-                    plugins: { ...chartOpts.plugins, legend: { display: false } },
+                    plugins: {
+                        ...chartOpts.plugins,
+                        legend: { display: false },
+                        tooltip: {
+                            ...chartOpts.plugins.tooltip,
+                            callbacks: {
+                                label: ctx => ` ${ctx.parsed.x.toLocaleString('it-IT')} colli`
+                            }
+                        }
+                    },
                     scales: {
-                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Outfit', size: 10 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { family: 'Outfit' } } }
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            ticks: { color: '#64748b', font: { family: 'Outfit', size: 11 } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 11 }, padding: 6 }
+                        }
                     }
                 }
             });
