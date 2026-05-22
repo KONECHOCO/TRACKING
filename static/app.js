@@ -800,28 +800,49 @@ function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 // ==========================================================================
 let presentationActive = false;
 
-// Cicla le pagine della tabella (5s per pagina) poi torna su
+// Cicla le pagine della tabella clienti poi mostra la sezione vettori completa
 async function runScrollCycle() {
-    const tableSection = document.querySelector('.data-section');
-    if (!tableSection || filteredData.length === 0) return;
+    const tableSection   = document.querySelector('.data-section');
+    const vettoriDivider = document.querySelector('.vettori-divider');
+    const vettoriTable   = document.querySelector('.vettori-section');
 
-    const targetY     = tableSection.getBoundingClientRect().top + window.scrollY - 16;
+    if (!tableSection) return;
+
     const timePerPage = 6000; // 6s per pagina
-    const totalPages  = Math.ceil(filteredData.length / itemsPerPage);
 
-    window.scrollTo({ top: targetY, behavior: 'smooth' });
+    // ── 1. Tabella clienti: scorri tutte le pagine ──
+    if (filteredData.length > 0) {
+        const clientY = tableSection.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top: clientY, behavior: 'smooth' });
 
-    for (let p = 1; p <= totalPages; p++) {
-        if (p > 1) {
-            currentPage = p;
-            renderTable();
-            window.scrollTo({ top: targetY, behavior: 'smooth' });
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        for (let p = 1; p <= totalPages; p++) {
+            if (p > 1) {
+                currentPage = p;
+                renderTable();
+                window.scrollTo({ top: clientY, behavior: 'smooth' });
+            }
+            await sleep(timePerPage);
         }
+        currentPage = 1;
+        renderTable();
+    }
+
+    // ── 2. Sezione Vettori: KPI + grafici ──
+    if (vettoriDivider) {
+        const vettY = vettoriDivider.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top: vettY, behavior: 'smooth' });
+        await sleep(timePerPage + 2000); // +2s extra per leggere i grafici
+    }
+
+    // ── 3. Tabella vettori (se presente e scrollabile) ──
+    if (vettoriTable) {
+        const vtY = vettoriTable.getBoundingClientRect().top + window.scrollY - 16;
+        window.scrollTo({ top: vtY, behavior: 'smooth' });
         await sleep(timePerPage);
     }
 
-    currentPage = 1;
-    renderTable();
+    // ── 4. Torna in cima ──
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
