@@ -220,11 +220,15 @@ function updateConnectionStatusBadge(stato, errore) {
 // --- AGGIORNAMENTO KPI CARDS ---
 function updateKPICards(kpis) {
     if (!kpis) return;
-    
+
     animateNumberValue('val-colli-chiusi', kpis.colli_chiusi_tot || 0);
     animateNumberValue('val-colli-spediti', kpis.colli_spediti_tot || 0);
     animateNumberValue('val-ordini-chiusi', kpis.ordini_chiusi_tot || 0);
     animateNumberValue('val-colli-partenza', kpis.colli_partenza_tot || 0);
+
+    // Footer: conteggi distinti
+    const elMand = document.getElementById('footer-mandanti');
+    if (elMand) elMand.textContent = kpis.clienti_totali ?? '—';
 }
 
 // Effetto contatore animato
@@ -761,6 +765,10 @@ async function loadSiteInfo() {
             whBox.style.boxShadow    = `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${data.active_color}22`;
         }
 
+        // Footer: numero sedi configurate
+        const elSedi = document.getElementById('footer-sedi');
+        if (elSedi) elSedi.textContent = data.sites ? data.sites.length : '—';
+
         // Popola dropdown
         const dropdown = document.getElementById('site-dropdown');
         dropdown.innerHTML = data.sites.map(s => `
@@ -1156,11 +1164,12 @@ function playSound(type = 'toast') {
 // ==========================================================================
 //  SCHERMATA FULL-SCREEN COMUNICAZIONE
 // ==========================================================================
-let fsTimer       = null;
-let fsCountdown   = 30;
-let activeComms   = [];
-let lastCommIds   = new Set();
-let fsCycleTimer  = null;
+let fsTimer        = null;
+let fsCountdown    = 30;
+let activeComms    = [];
+let lastCommIds    = new Set();
+let fsCycleTimer   = null;
+let commCycleIdx   = 0;   // indice per ciclare tra tutte le comunicazioni
 
 const iconMap = { info: 'info', warning: 'alert-triangle', urgent: 'alert-octagon' };
 const labelMap = { info: '📋 INFORMAZIONE', warning: '⚠️ AVVISO', urgent: '🚨 URGENTE' };
@@ -1222,14 +1231,16 @@ function closeFullscreenComm() {
     }, 350);
 }
 
-// Ciclo automatico comunicazioni (ogni 3 minuti)
+// Ciclo automatico comunicazioni (ogni 3 minuti, cicla su TUTTE le comunicazioni attive)
 function startCommCycle() {
     clearInterval(fsCycleTimer);
     fsCycleTimer = setInterval(() => {
-        // FIX: non mostrare fullscreen se l'utente sta usando il pannello
         const panelOpen = document.getElementById('comm-panel').classList.contains('open');
         if (activeComms.length > 0 && !panelOpen) {
-            showFullscreenComm(activeComms[0]);
+            // Cicla tra tutte le comunicazioni, non solo la prima
+            commCycleIdx = commCycleIdx % activeComms.length;
+            showFullscreenComm(activeComms[commCycleIdx]);
+            commCycleIdx = (commCycleIdx + 1) % activeComms.length;
         }
     }, 3 * 60 * 1000);
 }

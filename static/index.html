@@ -357,8 +357,8 @@
         <footer class="app-footer-bar">
             <p>&copy; 2026 Team IT MM Operations Dashboard Tracking</p>
             <div class="footer-meta">
-                <span>Mandante: <strong>D14</strong></span>
-                <span>Magazzino: <strong>PV</strong></span>
+                <span>Mandanti attivi: <strong id="footer-mandanti">—</strong></span>
+                <span>Sedi: <strong id="footer-sedi">—</strong></span>
                 <span id="update-indicator" class="pulse-indicator">Auto-aggiornamento attivo (10s)</span>
             </div>
         </footer>
@@ -368,7 +368,7 @@
     <div id="site-transition" class="site-transition-overlay" style="display:none">
         <div class="st-inner">
             <img src="/static/logo-mm.png" alt="MM Operations" style="height:44px;opacity:0.7;margin-bottom:2rem">
-            <div class="st-label">CAMBIO MAGAZZINO</div>
+            <div class="st-label">CAMBIO SEDE</div>
             <div class="st-dot-large" id="st-dot"></div>
             <div class="st-name" id="st-name">CALVENZANO</div>
             <div class="st-subtitle">
@@ -520,7 +520,7 @@
     <!-- INDICATORE MAGAZZINO FISSO (sempre visibile) -->
     <div id="warehouse-indicator" class="warehouse-indicator">
         <span class="wh-dot" id="wh-dot"></span>
-        <span class="wh-label">MAGAZZINO</span>
+        <span class="wh-label">SEDE</span>
         <span class="wh-name" id="wh-name">—</span>
     </div>
 
