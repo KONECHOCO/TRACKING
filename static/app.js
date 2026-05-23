@@ -1352,19 +1352,19 @@ function showFullscreenComm(comm) {
         document.getElementById('comm-fs-countdown').textContent = fsCountdown;
         const pct = (fsCountdown / 30) * 100;
         document.getElementById('comm-fs-progress').style.width = pct + '%';
-        if (fsCountdown <= 0) closeFullscreenComm(true); // auto-avanza alla prossima
+        if (fsCountdown <= 0) closeFullscreenComm(false); // chiude e torna alla dashboard
     }, 1000);
 }
 
-function closeFullscreenComm(autoAdvance = false) {
+function closeFullscreenComm() {
     clearInterval(fsTimer);
     const fs = document.getElementById('comm-fullscreen');
     fs.style.animation = 'commFsOut 0.35s ease forwards';
     setTimeout(() => {
         fs.style.display   = 'none';
         fs.style.animation = '';
-        // Se il countdown è scaduto naturalmente e ci sono altre comunicazioni visibili → mostra la prossima
-        if (autoAdvance) showNextComm();
+        // Nessun auto-avanzamento: torna alla dashboard normale
+        // Il ciclo di 3 minuti mostrerà la prossima comunicazione al turno successivo
     }, 350);
 }
 
@@ -1382,20 +1382,7 @@ function startCommCycle() {
     }, 3 * 60 * 1000);
 }
 
-// Avanza alla prossima comunicazione visibile (chiamato dopo countdown o click)
-function showNextComm() {
-    const visible = getVisibleComms();
-    if (visible.length <= 1) return; // nessuna prossima da mostrare
-    commCycleIdx = (commCycleIdx) % visible.length;
-    // Breve pausa poi mostra la prossima
-    setTimeout(() => {
-        const panelOpen = document.getElementById('comm-panel').classList.contains('open');
-        if (!panelOpen) {
-            showFullscreenComm(visible[commCycleIdx]);
-            commCycleIdx = (commCycleIdx + 1) % visible.length;
-        }
-    }, 1500);
-}
+
 
 // Recupera comunicazioni e aggiorna badge
 async function fetchComunicazioni() {
