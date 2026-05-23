@@ -122,6 +122,33 @@ async def create_comunicazione(
     save_comms(comms)
     return new_comm
 
+@app.put("/api/comunicazioni/{comm_id}")
+async def update_comunicazione(
+    comm_id:  int,
+    title:    str = Form(...),
+    message:  str = Form(...),
+    name:     str = Form(...),
+    role:     str = Form(""),
+    priority: str = Form("info"),
+    expiry:   str = Form(""),
+    image:    Optional[UploadFile] = File(None)
+):
+    comms = load_comms()
+    for c in comms:
+        if c["id"] == comm_id:
+            c["title"]    = title
+            c["message"]  = message
+            c["name"]     = name
+            c["role"]     = role
+            c["priority"] = priority
+            c["expiry"]   = expiry if expiry else None
+            if image and image.filename:
+                content = await image.read()
+                c["image"] = f"data:{image.content_type};base64,{base64.b64encode(content).decode()}"
+            save_comms(comms)
+            return c
+    return {"error": "not found"}
+
 @app.delete("/api/comunicazioni/{comm_id}")
 def delete_comunicazione(comm_id: int):
     comms = load_comms()

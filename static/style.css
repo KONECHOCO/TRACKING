@@ -1360,13 +1360,46 @@ body {
     gap: 0.5rem;
 }
 .comm-list-title { font-size: 0.9rem; font-weight: 700; }
-.comm-list-delete {
+/* Azioni lista comunicazioni */
+.comm-list-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
+.comm-action-btn {
     background: transparent;
     border: none;
-    color: var(--text-dimmed);
     cursor: pointer;
-    padding: 0.2rem;
-    flex-shrink: 0;
+    padding: 0.3rem;
+    border-radius: 6px;
+    transition: background 0.18s ease, color 0.18s ease;
+    line-height: 0;
+}
+.comm-action-btn svg { width: 15px; height: 15px; }
+.comm-action-visible { color: var(--color-success); }
+.comm-action-visible:hover { background: rgba(16,185,129,0.12); }
+.comm-action-hidden  { color: var(--text-dimmed); }
+.comm-action-hidden:hover  { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+.comm-action-edit    { color: hsl(210,80%,65%); }
+.comm-action-edit:hover    { background: rgba(99,147,255,0.12); }
+.comm-action-delete  { color: var(--text-dimmed); }
+.comm-action-delete:hover  { background: rgba(239,68,68,0.12); color: var(--color-danger); }
+/* Item esclusa dalla rotazione */
+.comm-hidden-item { opacity: 0.55; }
+.comm-hidden-badge {
+    font-size: 0.68rem;
+    color: var(--text-dimmed);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.2rem;
+}
+.comm-hidden-badge svg { width: 11px; height: 11px; }
+/* keep old delete alias for backward compat */
+.comm-list-delete {
+    background: transparent; border: none; color: var(--text-dimmed);
+    cursor: pointer; padding: 0.2rem; flex-shrink: 0;
     transition: color var(--transition-fast);
 }
 .comm-list-delete:hover { color: var(--color-danger); }

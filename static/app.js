@@ -1028,7 +1028,7 @@ function removeImage() {
     document.getElementById('image-drop-zone').style.display = 'flex';
 }
 
-// Pubblica comunicazione
+// Pubblica o modifica comunicazione
 async function publishComm() {
     const title   = document.getElementById('comm-title').value.trim();
     const message = document.getElementById('comm-message').value.trim();
@@ -1036,6 +1036,8 @@ async function publishComm() {
     const role    = document.getElementById('comm-role').value.trim();
     const expiry  = document.getElementById('comm-expiry').value;
     const imageFile = document.getElementById('comm-image').files[0];
+    const editId  = document.getElementById('edit-comm-id').value;
+    const isEdit  = !!editId;
 
     if (!title || !message || !name) {
         showToast('Campi mancanti', 'Compila Titolo, Messaggio e Nome prima di pubblicare.', 'warning');
@@ -1044,7 +1046,7 @@ async function publishComm() {
 
     const btn = document.getElementById('btn-publish-comm');
     btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader"></i> Pubblicazione...';
+    btn.innerHTML = `<i data-lucide="loader"></i> ${isEdit ? 'Salvataggio...' : 'Pubblicazione...'}`;
     lucide.createIcons();
 
     const formData = new FormData();
@@ -1057,29 +1059,67 @@ async function publishComm() {
     if (imageFile) formData.append('image', imageFile);
 
     try {
-        const res = await fetch('/api/comunicazioni', { method: 'POST', body: formData });
+        const url    = isEdit ? `/api/comunicazioni/${editId}` : '/api/comunicazioni';
+        const method = isEdit ? 'PUT' : 'POST';
+        const res    = await fetch(url, { method, body: formData });
         if (!res.ok) throw new Error('Errore server');
 
-        // Reset form
-        document.getElementById('comm-title').value = '';
-        document.getElementById('comm-message').value = '';
-        document.getElementById('comm-expiry').value = '';
-        removeImage();
-
-        showToast('Comunicazione Pubblicata!', `"${title}" è ora visibile a tutti.`, 'success');
+        resetCommForm();
+        showToast(
+            isEdit ? 'Comunicazione Aggiornata!' : 'Comunicazione Pubblicata!',
+            `"${title}" ${isEdit ? 'è stata modificata.' : 'è ora visibile a tutti.'}`,
+            'success'
+        );
         await fetchComunicazioni();
         closeCommPanel();
-        // Mostra subito full-screen la comunicazione appena pubblicata
-        if (activeComms.length > 0) setTimeout(() => showFullscreenComm(activeComms[0]), 400);
+        if (!isEdit && activeComms.length > 0) {
+            setTimeout(() => showFullscreenComm(activeComms[0]), 400);
+        }
         switchCommTab('list');
 
     } catch (e) {
-        showToast('Errore', 'Impossibile pubblicare la comunicazione.', 'warning');
+        showToast('Errore', 'Impossibile salvare la comunicazione.', 'warning');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="send"></i> Pubblica Comunicazione';
         lucide.createIcons();
     }
+}
+
+// Reset del form comunicazione
+function resetCommForm() {
+    document.getElementById('comm-title').value   = '';
+    document.getElementById('comm-message').value = '';
+    document.getElementById('comm-expiry').value  = '';
+    document.getElementById('edit-comm-id').value = '';
+    const btn = document.getElementById('btn-publish-comm');
+    btn.innerHTML = '<i data-lucide="send"></i> Pubblica Comunicazione';
+    removeImage();
+}
+
+// Modifica comunicazione esistente: precompila il form
+function editComm(c) {
+    // Passa alla tab "Nuova"
+    switchCommTab('new');
+
+    // Precompila campi
+    document.getElementById('comm-title').value   = c.title;
+    document.getElementById('comm-message').value = c.message;
+    document.getElementById('comm-name').value    = c.name;
+    document.getElementById('comm-role').value    = c.role || '';
+    document.getElementById('comm-expiry').value  = c.expiry || '';
+    document.getElementById('edit-comm-id').value = c.id;
+
+    // Imposta priorità
+    selectedPriority = c.priority || 'info';
+    document.querySelectorAll('.priority-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.priority === selectedPriority);
+    });
+
+    // Aggiorna bottone
+    const btn = document.getElementById('btn-publish-comm');
+    btn.innerHTML = '<i data-lucide="save"></i> Salva Modifiche';
+    lucide.createIcons();
 }
 
 // Elimina comunicazione
@@ -1088,6 +1128,21 @@ async function deleteComm(id) {
     fetchComunicazioni();
     loadCommList();
     showToast('Eliminata', 'Comunicazione rimossa.', 'info');
+}
+
+// Toggle visibilità nella rotazione fullscreen
+function toggleCommVisibility(id) {
+    if (hiddenCommIds.has(id)) {
+        hiddenCommIds.delete(id);
+    } else {
+        hiddenCommIds.add(id);
+    }
+    loadCommList(); // aggiorna icona
+}
+
+// Restituisce le comunicazioni visibili (non escluse)
+function getVisibleComms() {
+    return activeComms.filter(c => !hiddenCommIds.has(c.id));
 }
 
 // Carica lista nel pannello
@@ -1102,21 +1157,40 @@ async function loadCommList() {
             return;
         }
 
-        container.innerHTML = list.map(c => `
-            <div class="comm-list-item pri-${c.priority}" style="margin-bottom:0.75rem">
+        container.innerHTML = list.map(c => {
+            const hidden = hiddenCommIds.has(c.id);
+            return `
+            <div class="comm-list-item pri-${c.priority} ${hidden ? 'comm-hidden-item' : ''}">
                 <div class="comm-list-item-header">
                     <span class="comm-list-title">${c.title}</span>
-                    <button class="comm-list-delete" onclick="deleteComm(${c.id})" title="Elimina">
-                        <i data-lucide="trash-2"></i>
-                    </button>
+                    <div class="comm-list-actions">
+                        <button class="comm-action-btn ${hidden ? 'comm-action-hidden' : 'comm-action-visible'}"
+                                onclick="toggleCommVisibility(${c.id})"
+                                title="${hidden ? 'Esclusa dalla rotazione — clicca per includere' : 'Inclusa nella rotazione — clicca per escludere'}">
+                            <i data-lucide="${hidden ? 'eye-off' : 'eye'}"></i>
+                        </button>
+                        <button class="comm-action-btn comm-action-edit"
+                                onclick='editComm(${JSON.stringify(c).replace(/'/g, "&#39;")})'
+                                title="Modifica">
+                            <i data-lucide="pencil"></i>
+                        </button>
+                        <button class="comm-action-btn comm-action-delete"
+                                onclick="deleteComm(${c.id})" title="Elimina">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
                 </div>
                 <p class="comm-list-msg">${c.message}</p>
                 <div class="comm-list-footer">
-                    <span class="comm-list-sig"><i data-lucide="user" style="width:11px;height:11px"></i> ${c.name}${c.role ? ' — ' + c.role : ''}</span>
+                    <span class="comm-list-sig">
+                        <i data-lucide="user" style="width:11px;height:11px"></i>
+                        ${c.name}${c.role ? ' — ' + c.role : ''}
+                    </span>
                     <span>${c.created_at}</span>
                 </div>
-            </div>
-        `).join('');
+                ${hidden ? '<div class="comm-hidden-badge"><i data-lucide="eye-off"></i> Esclusa dalla rotazione</div>' : ''}
+            </div>`;
+        }).join('');
 
         const badge = document.getElementById('comm-tab-count');
         if (badge) badge.textContent = list.length;
@@ -1140,24 +1214,84 @@ function getAudioCtx() {
 function playSound(type = 'toast') {
     try {
         const ctx = getAudioCtx();
-        const notes = type === 'comm'
-            ? [523.25, 659.25, 783.99, 1046.5]  // C5 E5 G5 C6 — accordo trionfale
-            : [440, 523.25];                      // A4 C5 — tocco leggero toast
 
-        notes.forEach((freq, i) => {
-            const osc  = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-            const t = ctx.currentTime + i * 0.18;
-            gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(type === 'comm' ? 0.25 : 0.12, t + 0.04);
-            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-            osc.start(t);
-            osc.stop(t + 0.6);
-        });
+        if (type === 'comm') {
+            // ── FLASH NOTIZIARIO TG ──────────────────────────────────────────
+            // Struttura: colpo di basso → jingle ascendente → accordo di sfondo
+            const now = ctx.currentTime;
+
+            // 1. Colpo basso (kick drum sintetico) — impatto iniziale
+            const kick = ctx.createOscillator();
+            const kickGain = ctx.createGain();
+            kick.connect(kickGain); kickGain.connect(ctx.destination);
+            kick.type = 'sine';
+            kick.frequency.setValueAtTime(150, now);
+            kick.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+            kickGain.gain.setValueAtTime(0.7, now);
+            kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+            kick.start(now); kick.stop(now + 0.4);
+
+            // 2. Jingle stile TG: 5 note rapide ascendenti (sol-la-si-re-sol)
+            const jingle = [392, 440, 494, 587, 784];
+            jingle.forEach((freq, i) => {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'square';
+                osc.frequency.value = freq;
+                const t = now + 0.05 + i * 0.11;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.18, t + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+                osc.start(t); osc.stop(t + 0.32);
+            });
+
+            // 3. Secondo colpo accentato sulla nota finale (più forte)
+            const accent = ctx.createOscillator();
+            const accentGain = ctx.createGain();
+            accent.connect(accentGain); accentGain.connect(ctx.destination);
+            accent.type = 'sine';
+            accent.frequency.value = 784; // sol5
+            const ta = now + 0.6;
+            accentGain.gain.setValueAtTime(0, ta);
+            accentGain.gain.linearRampToValueAtTime(0.35, ta + 0.03);
+            accentGain.gain.exponentialRampToValueAtTime(0.001, ta + 0.9);
+            accent.start(ta); accent.stop(ta + 1.0);
+
+            // 4. Accordo di sfondo (pad sintetico) — sottofondo atmosferico
+            [196, 247, 294].forEach(freq => {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'sawtooth';
+                const flt = ctx.createBiquadFilter();
+                flt.type = 'lowpass'; flt.frequency.value = 600;
+                osc.connect(flt); flt.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, now + 0.1);
+                gain.gain.linearRampToValueAtTime(0.04, now + 0.4);
+                gain.gain.setValueAtTime(0.04, now + 1.2);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+                osc.start(now + 0.1); osc.stop(now + 2.0);
+            });
+
+        } else {
+            // ── TOAST leggero ────────────────────────────────────────────────
+            const ctx2 = getAudioCtx();
+            [440, 523.25].forEach((freq, i) => {
+                const osc  = ctx2.createOscillator();
+                const gain = ctx2.createGain();
+                osc.connect(gain); gain.connect(ctx2.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                const t = ctx2.currentTime + i * 0.15;
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.1, t + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+                osc.start(t); osc.stop(t + 0.5);
+            });
+        }
     } catch (e) { /* audio non disponibile */ }
 }
 
@@ -1169,7 +1303,8 @@ let fsCountdown    = 30;
 let activeComms    = [];
 let lastCommIds    = new Set();
 let fsCycleTimer   = null;
-let commCycleIdx   = 0;   // indice per ciclare tra tutte le comunicazioni
+let commCycleIdx   = 0;    // indice per ciclare tra tutte le comunicazioni
+let hiddenCommIds  = new Set(); // ID comunicazioni escluse dalla rotazione fullscreen
 
 const iconMap = { info: 'info', warning: 'alert-triangle', urgent: 'alert-octagon' };
 const labelMap = { info: '📋 INFORMAZIONE', warning: '⚠️ AVVISO', urgent: '🚨 URGENTE' };
@@ -1217,32 +1352,49 @@ function showFullscreenComm(comm) {
         document.getElementById('comm-fs-countdown').textContent = fsCountdown;
         const pct = (fsCountdown / 30) * 100;
         document.getElementById('comm-fs-progress').style.width = pct + '%';
-        if (fsCountdown <= 0) closeFullscreenComm();
+        if (fsCountdown <= 0) closeFullscreenComm(true); // auto-avanza alla prossima
     }, 1000);
 }
 
-function closeFullscreenComm() {
+function closeFullscreenComm(autoAdvance = false) {
     clearInterval(fsTimer);
     const fs = document.getElementById('comm-fullscreen');
     fs.style.animation = 'commFsOut 0.35s ease forwards';
     setTimeout(() => {
-        fs.style.display    = 'none';
-        fs.style.animation  = '';
+        fs.style.display   = 'none';
+        fs.style.animation = '';
+        // Se il countdown è scaduto naturalmente e ci sono altre comunicazioni visibili → mostra la prossima
+        if (autoAdvance) showNextComm();
     }, 350);
 }
 
-// Ciclo automatico comunicazioni (ogni 3 minuti, cicla su TUTTE le comunicazioni attive)
+// Ciclo automatico comunicazioni (ogni 3 min, cicla su tutte le comunicazioni visibili)
 function startCommCycle() {
     clearInterval(fsCycleTimer);
     fsCycleTimer = setInterval(() => {
         const panelOpen = document.getElementById('comm-panel').classList.contains('open');
-        if (activeComms.length > 0 && !panelOpen) {
-            // Cicla tra tutte le comunicazioni, non solo la prima
-            commCycleIdx = commCycleIdx % activeComms.length;
-            showFullscreenComm(activeComms[commCycleIdx]);
-            commCycleIdx = (commCycleIdx + 1) % activeComms.length;
+        const visible = getVisibleComms();
+        if (visible.length > 0 && !panelOpen) {
+            commCycleIdx = commCycleIdx % visible.length;
+            showFullscreenComm(visible[commCycleIdx]);
+            commCycleIdx = (commCycleIdx + 1) % visible.length;
         }
     }, 3 * 60 * 1000);
+}
+
+// Avanza alla prossima comunicazione visibile (chiamato dopo countdown o click)
+function showNextComm() {
+    const visible = getVisibleComms();
+    if (visible.length <= 1) return; // nessuna prossima da mostrare
+    commCycleIdx = (commCycleIdx) % visible.length;
+    // Breve pausa poi mostra la prossima
+    setTimeout(() => {
+        const panelOpen = document.getElementById('comm-panel').classList.contains('open');
+        if (!panelOpen) {
+            showFullscreenComm(visible[commCycleIdx]);
+            commCycleIdx = (commCycleIdx + 1) % visible.length;
+        }
+    }, 1500);
 }
 
 // Recupera comunicazioni e aggiorna badge
@@ -1268,10 +1420,14 @@ async function fetchComunicazioni() {
             // Nuova comunicazione arrivata — mostra subito full-screen
             showFullscreenComm(newIds[0]);
         } else if (!panelOpen && lastCommIds.size === 0 && list.length > 0) {
-            // Prima volta che carichiamo con comunicazioni — mostra dopo 3s
+            // Prima volta che carichiamo — mostra la prima visibile dopo 3s
             setTimeout(() => {
                 if (!document.getElementById('comm-panel').classList.contains('open')) {
-                    showFullscreenComm(list[0]);
+                    const visible = getVisibleComms();
+                    if (visible.length > 0) {
+                        showFullscreenComm(visible[0]);
+                        commCycleIdx = 1 % visible.length;
+                    }
                 }
             }, 3000);
         }
